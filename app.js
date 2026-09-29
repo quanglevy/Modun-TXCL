@@ -181,23 +181,23 @@ function recalculateAllRounds() {
    ========================================================================== */
 
 /**
- * MAX SIÊU CAO THỦ - Multi-Factor Predictive Intelligence Engine
- * 1. Deep Bridge Pattern Matcher (Cầu Bệt, Cầu 1-1, Cầu 2-2, 1-2, 2-1, 3-2-1, Bẻ Cầu Bệt Dài)
- * 2. Gaussian Equilibrium & Mean-Reversion on 5D Sums (Mean 22.5, Pullback from extremes >= 28 or <= 16)
- * 3. Parity Matrix Equilibrium (5L/4L shift to Chẵn, 5C/4C shift to Lẻ)
- * 4. Higher-Order Markov Probability
- * 5. Adaptive Anti-Loss Correction Filter
+ * MAX SIÊU CAO THỦ - Master Bridge Pattern Engine
+ * 1. Cầu Đảo 1-1 (T-X-T-X...) & Cầu Nhịp 2-1 (A-A-B ➔ A)
+ * 2. Cầu 2-2 (A-A-B-B ➔ A) & Cầu Bệt (Đu bệt tới 4 tay)
+ * 3. Hồi quy cực hạn Tổng 5 số (>= 33 Xỉu, <= 12 Tài)
+ * 4. Cân bằng ngũ hành 5 số lẻ/chẵn
  */
 function analyzeBridgePatterns(history, type = 'tx') {
     const item1 = type === 'tx' ? 'Tài' : 'Chẵn';
     const item2 = type === 'tx' ? 'Xỉu' : 'Lẻ';
+    const opp = v => v === item1 ? item2 : item1;
 
-    if (!history || history.length < 2) {
+    if (!history || history.length < 1) {
         return {
             patternName: 'Khởi Tạo Nhịp',
-            recommendation: type === 'tx' ? 'Tài' : 'Chẵn',
-            confidence: 60,
-            reason: 'Chưa đủ dữ liệu lịch sử để kích hoạt động cơ đa tầng. Đề xuất theo nhịp cân bằng cơ bản.'
+            recommendation: item1,
+            confidence: 65,
+            reason: 'Chưa đủ dữ liệu lịch sử. Đề xuất theo nhịp cân bằng.'
         };
     }
 
@@ -205,180 +205,169 @@ function analyzeBridgePatterns(history, type = 'tx') {
     const seq = history.map(r => type === 'tx' ? r.actualTx : r.actualCl);
     const last = seq[n - 1];
     const lastRound = history[n - 1];
-    const prevRound = history[n - 2];
 
-    let voteScore = 0; // > 0 favors item1, < 0 favors item2
-    let primaryPattern = 'Cầu Nhịp Đa Tầng';
-    let detailedReasons = [];
-
-    // Count current streak of the last outcome
-    let streakCount = 1;
+    // 1. Calculate current streak of the last outcome
+    let streak = 1;
     for (let i = n - 2; i >= 0; i--) {
-        if (seq[i] === last) streakCount++;
+        if (seq[i] === last) streak++;
         else break;
     }
 
-    // -------------------------------------------------------------
-    // FACTOR 1: BRIDGE PATTERN RECOGNITION (Weight: 4.0 - 5.0)
-    // -------------------------------------------------------------
-    if (streakCount >= 4) {
-        // Bệt dài 4+ tay: Vùng quá mua cực hạn -> Kích hoạt BẺ CẦU
-        const breakTarget = last === item1 ? item2 : item1;
-        const vote = breakTarget === item1 ? 4.8 : -4.8;
-        voteScore += vote;
-        primaryPattern = `Cảnh Báo Bẻ Cầu Bệt (${last} ${streakCount} tay)`;
-        detailedReasons.push(`Cầu Bệt ${last} đã dài ${streakCount} kỳ (vùng quá mua). AI kích hoạt lệnh Bẻ Cầu chuyển sang ${breakTarget}.`);
-    } else if (streakCount === 3) {
-        // Bệt 3 tay: Nhịp bệt chuẩn, tiếp tục đu bệt
-        const vote = last === item1 ? 4.0 : -4.0;
-        voteScore += vote;
-        primaryPattern = `Cầu Bệt Chuẩn (${last} 3 tay)`;
-        detailedReasons.push(`Đang xuất hiện Cầu Bệt ${last} 3 kỳ liên tiếp. Ưu tiên bám dòng theo ${last}.`);
-    } else if (streakCount === 2) {
-        // Kiểm tra Cầu 2-2
-        if (n >= 4 && seq[n - 3] === seq[n - 4] && seq[n - 3] !== last) {
-            // Chuỗi: A-A-B-B -> Hoàn thành cặp đôi -> Đổi chiều sang A!
-            const switchTarget = last === item1 ? item2 : item1;
-            const vote = switchTarget === item1 ? 4.5 : -4.5;
-            voteScore += vote;
-            primaryPattern = 'Cầu 2-2 Nhịp Đôi (Đổi Chiều)';
-            detailedReasons.push(`Mô hình Cầu 2-2 (${seq[n-3]}x2 rồi ${last}x2) đã đủ cặp. Dự đoán kỳ tới đổi chiều sang ${switchTarget}.`);
-        } else {
-            // Nhịp cặp 2 tay
-            const vote = last === item1 ? 2.5 : -2.5;
-            voteScore += vote;
-            primaryPattern = `Cầu Cặp Đôi (${last} 2 tay)`;
-            detailedReasons.push(`Nhịp cặp ${last} 2 tay đang giữ đà.`);
-        }
-    } else if (streakCount === 1) {
-        // Vừa đảo nhịp: Kiểm tra Cầu 1-1
-        let altCount = 1;
-        for (let i = n - 1; i >= 1; i--) {
-            if (seq[i] !== seq[i - 1]) altCount++;
-            else break;
-        }
+    // 2. Calculate current alternating count (1-1 nhịp)
+    let alt = 1;
+    for (let i = n - 1; i >= 1; i--) {
+        if (seq[i] !== seq[i - 1]) alt++;
+        else break;
+    }
 
-        if (altCount >= 3) {
-            const nextAlt = last === item1 ? item2 : item1;
-            const vote = nextAlt === item1 ? (4.2 + Math.min(altCount, 5) * 0.2) : -(4.2 + Math.min(altCount, 5) * 0.2);
-            voteScore += vote;
-            primaryPattern = `Cầu Đảo 1-1 (${altCount} nhịp)`;
-            detailedReasons.push(`Nhịp Cầu Đảo 1-1 (${item1}-${item2}) chạy chuẩn xác ${altCount} tay. Dự đoán tiếp tục đảo sang ${nextAlt}.`);
-        } else if (n >= 4 && seq[n - 2] === seq[n - 3] && seq[n - 3] !== last) {
-            const vote = last === item1 ? 3.2 : -3.2;
-            voteScore += vote;
-            primaryPattern = `Cầu Nhịp 2-1 (Vào Cặp ${last})`;
-            detailedReasons.push(`Sau cặp đôi ${seq[n-2]}, xuất hiện ${last}. Dự đoán tiếp tục đà của ${last}.`);
+    // 3. Extreme Gaussian Mean-Reversion (Sum >= 30 or Sum <= 13)
+    if (type === 'tx' && lastRound.sum !== undefined) {
+        if (lastRound.sum >= 30) {
+            return {
+                patternName: 'Hồi Quy Đỉnh Tổng',
+                recommendation: 'Xỉu',
+                confidence: 89,
+                reason: `Tổng 5 số chạm đỉnh cực đại (${lastRound.sum} điểm). Định luật hồi quy kéo mạnh về XỈU.`
+            };
+        }
+        if (lastRound.sum <= 13) {
+            return {
+                patternName: 'Hồi Quy Đáy Tổng',
+                recommendation: 'Tài',
+                confidence: 89,
+                reason: `Tổng 5 số chạm đáy cực thấp (${lastRound.sum} điểm). Lực nén đẩy mạnh lên TÀI.`
+            };
         }
     }
 
-    // -------------------------------------------------------------
-    // FACTOR 2: GAUSSIAN SUM REVERSION & MOMENTUM (For TX)
-    // -------------------------------------------------------------
-    if (type === 'tx') {
-        const lastSum = lastRound.sum !== undefined ? lastRound.sum : lastRound.digits.reduce((a,b)=>a+b,0);
-        const prevSum = prevRound ? (prevRound.sum !== undefined ? prevRound.sum : prevRound.digits.reduce((a,b)=>a+b,0)) : 22.5;
-        const deltaSum = lastSum - prevSum;
-
-        // Định luật hồi quy Gaussian
-        if (lastSum >= 30) {
-            // Tổng >= 30: 85% kéo về Xỉu
-            voteScore -= 4.2;
-            detailedReasons.push(`Tổng 5 số chạm đỉnh (${lastSum} điểm). Định luật hồi quy kéo cực mạnh về XỈU.`);
-        } else if (lastSum >= 26) {
-            voteScore -= 2.8;
-            detailedReasons.push(`Tổng 5 số (${lastSum} điểm) ở vùng biên cao.`);
-        } else if (lastSum <= 14) {
-            // Tổng <= 14: 85% bật lên Tài
-            voteScore += 4.2;
-            detailedReasons.push(`Tổng 5 số chạm đáy (${lastSum} điểm). Định luật hồi quy đẩy cực mạnh lên TÀI.`);
-        } else if (lastSum <= 18) {
-            voteScore += 2.8;
-            detailedReasons.push(`Tổng 5 số (${lastSum} điểm) ở vùng biên thấp.`);
-        }
-
-        // Tốc độ biến thiên tổng
-        if (deltaSum >= 12) {
-            voteScore -= 2.2;
-        } else if (deltaSum <= -12) {
-            voteScore += 2.2;
-        }
-
-        // Tỷ lệ bóng lớn/nhỏ
-        const bigDigits = lastRound.digits.filter(d => d >= 5).length;
-        if (bigDigits >= 4) {
-            voteScore -= 2.5;
-        } else if (bigDigits <= 1) {
-            voteScore += 2.5;
-        }
-    }
-
-    // -------------------------------------------------------------
-    // FACTOR 3: PARITY HARMONY (For CL)
-    // -------------------------------------------------------------
-    if (type === 'cl') {
+    // 4. Parity extreme imbalance (5 odd or 5 even)
+    if (type === 'cl' && lastRound.digits) {
         const oddCount = lastRound.digits.filter(d => d % 2 !== 0).length;
-        const evenCount = 5 - oddCount;
-
-        if (oddCount >= 4) {
-            voteScore += 4.2; // Lệch về Chẵn
-            detailedReasons.push(`Kỳ trước nổ ${oddCount}/5 số Lẻ (lệch pha). Cầu bù trừ ngũ hành đẩy mạnh về CHẴN.`);
-        } else if (evenCount >= 4) {
-            voteScore -= 4.2; // Lệch về Lẻ
-            detailedReasons.push(`Kỳ trước nổ ${evenCount}/5 số Chẵn (lệch pha). Cầu bù trừ ngũ hành đẩy mạnh về LẺ.`);
+        if (oddCount === 5) {
+            return {
+                patternName: 'Cân Bằng Ngũ Hành (5 Lẻ ➔ Chẵn)',
+                recommendation: 'Chẵn',
+                confidence: 88,
+                reason: 'Toàn bộ 5 số kỳ trước đều là số Lẻ. Cầu bù trừ ngũ hành đẩy mạnh về CHẴN.'
+            };
         }
-
-        const headTailSum = lastRound.digits[0] + lastRound.digits[4];
-        voteScore += (headTailSum % 2 === 0 ? 1.5 : -1.5);
-
-        const [p1, p2] = calculatePascalPeak(lastRound.digits);
-        voteScore += ((p1 + p2) % 2 === 0 ? 1.8 : -1.8);
-    }
-
-    // -------------------------------------------------------------
-    // FACTOR 4: MARKOV TRANSITIONS
-    // -------------------------------------------------------------
-    if (n >= 5) {
-        const gram2 = `${seq[n-2]}-${seq[n-1]}`;
-        let markovCount1 = 0;
-        let markovCount2 = 0;
-        for (let i = 0; i < n - 2; i++) {
-            if (`${seq[i]}-${seq[i+1]}` === gram2) {
-                if (seq[i+2] === item1) markovCount1++;
-                else if (seq[i+2] === item2) markovCount2++;
-            }
-        }
-        if (markovCount1 + markovCount2 >= 2) {
-            voteScore += (markovCount1 > markovCount2 ? 2.5 : (markovCount2 > markovCount1 ? -2.5 : 0));
+        if (oddCount === 0) {
+            return {
+                patternName: 'Cân Bằng Ngũ Hành (5 Chẵn ➔ Lẻ)',
+                recommendation: 'Lẻ',
+                confidence: 88,
+                reason: 'Toàn bộ 5 số kỳ trước đều là số Chẵn. Cầu bù trừ ngũ hành đẩy mạnh về LẺ.'
+            };
         }
     }
 
-    // -------------------------------------------------------------
-    // FACTOR 5: ANTI-LOSS ADAPTIVE PROTECTION (Ngắt chuỗi gãy)
-    // -------------------------------------------------------------
-    if (n >= 2) {
-        const lastStatus = type === 'tx' ? lastRound.statusTx : lastRound.statusCl;
-        if (lastStatus === 'Gãy') {
-            // Nếu tay trước vừa gãy -> Tự động chuyển đổi chế độ đảo nhịp bắt điểm rơi mới
-            if (voteScore > 0 && voteScore < 3.0) {
-                voteScore = -Math.abs(voteScore) * 1.3;
-            } else if (voteScore < 0 && voteScore > -3.0) {
-                voteScore = Math.abs(voteScore) * 1.3;
-            }
-            primaryPattern += ' [Đồng Bộ Nhịp Mới]';
+    // 5. TÀI XỈU DEDICATED LOGIC (Cầu Đôi 2-2 & Bẻ Nhịp Đôi)
+    if (type === 'tx') {
+        // Cầu Đôi 2-2 Pattern: A-A-B -> predict B (to make A-A-B-B)
+        if (n >= 3 && seq[n-2] === seq[n-3] && seq[n-2] !== last && streak === 1) {
+            return {
+                patternName: `Khớp Cầu Đôi 2-2 (${last})`,
+                recommendation: last,
+                confidence: 86,
+                reason: `Nhịp 2-2 đang định hình sau cặp đôi ${seq[n-2]}. Dự đoán ghép cặp đôi ${last}.`
+            };
         }
+
+        // Cầu 2-2 Hoàn Thành: A-A-B-B -> Bẻ sang A
+        if (n >= 4 && seq[n-3] === seq[n-4] && seq[n-2] === seq[n-1] && seq[n-3] !== seq[n-1] && streak === 2) {
+            return {
+                patternName: `Bẻ Cầu 2-2 (Chuyển Sang ${opp(last)})`,
+                recommendation: opp(last),
+                confidence: 88,
+                reason: `Cầu 2-2 đã hoàn thành 4 kỳ chuẩn chỉnh. AI bẻ nhịp sang ${opp(last)}.`
+            };
+        }
+
+        // Bẻ Nhịp Đôi (Streak 2 khi bàn nhịp ngắn)
+        if (streak === 2) {
+            return {
+                patternName: `Bẻ Nhịp Đôi (${last} ➔ ${opp(last)})`,
+                recommendation: opp(last),
+                confidence: 84,
+                reason: `Nhịp bàn đang dao động ngắn (max bệt 2 tay). Bẻ cầu sau 2 kỳ ${last} sang ${opp(last)}.`
+            };
+        }
+
+        // Cầu Đảo 1-1
+        if (alt >= 2 && streak === 1) {
+            return {
+                patternName: `Cầu Đảo 1-1 (${alt} tay)`,
+                recommendation: opp(last),
+                confidence: Math.min(95, 76 + alt * 4),
+                reason: `Nhịp Cầu Đảo 1-1 (${item1}-${item2}) đang chạy rất chuẩn ${alt} tay. Dự đoán tiếp tục đảo sang ${opp(last)}.`
+            };
+        }
+
+        // Cầu Bệt Dài >= 5 tay
+        if (streak >= 5) {
+            return {
+                patternName: `Cảnh Báo Bẻ Cầu Bệt (${last} ${streak} tay)`,
+                recommendation: opp(last),
+                confidence: 85,
+                reason: `Cầu Bệt ${last} đã dài ${streak} kỳ (vùng quá mua). AI kích hoạt lệnh Bẻ Cầu sang ${opp(last)}.`
+            };
+        }
+
+        // Streak 3-4 tay
+        if (streak >= 3) {
+            return {
+                patternName: `Bám Cầu Bệt (${last} ${streak} tay)`,
+                recommendation: last,
+                confidence: Math.min(92, 74 + streak * 4),
+                reason: `Đang xuất hiện Cầu Bệt ${last} liên tiếp ${streak} kỳ. Chiến thuật: Bám đuôi bệt theo ${last}.`
+            };
+        }
+
+        return {
+            patternName: `Theo Dòng (${last})`,
+            recommendation: last,
+            confidence: 72,
+            reason: `Dòng tiền đang ủng hộ nhịp ${last}. Ưu tiên bám theo xu hướng gần nhất.`
+        };
     }
 
-    const recommendation = voteScore >= 0 ? item1 : item2;
-    const absScore = Math.abs(voteScore);
-    const confidence = Math.min(98, Math.max(72, Math.round(68 + absScore * 4.2)));
-    const reasonText = detailedReasons.length > 0 ? detailedReasons.join(' ') : `Dự báo SIÊU CAO THỦ theo mô hình ${primaryPattern}.`;
+    // 6. CHẴN LẺ DEDICATED LOGIC (Cầu 1-1 & Cầu Bệt)
+    // Cầu 1-1 (Alternation: alt >= 2)
+    if (alt >= 2 && streak === 1) {
+        return {
+            patternName: `Cầu Đảo 1-1 (${alt} tay)`,
+            recommendation: opp(last),
+            confidence: Math.min(95, 78 + alt * 4),
+            reason: `Nhịp Cầu Đảo 1-1 (${item1}-${item2}) đang chạy rất chuẩn ${alt} tay. Dự đoán tiếp tục đảo sang ${opp(last)}.`
+        };
+    }
 
+    // Cầu Bệt 2-3 tay -> Follow
+    if (streak >= 2 && streak <= 3) {
+        return {
+            patternName: `Cầu Bệt (${last} ${streak} tay)`,
+            recommendation: last,
+            confidence: Math.min(92, 75 + streak * 5),
+            reason: `Đang xuất hiện Cầu Bệt ${last} liên tiếp ${streak} kỳ. Chiến thuật: Bám đuôi bệt theo ${last}.`
+        };
+    }
+
+    // Cầu Bệt >= 4 tay -> Bẻ
+    if (streak >= 4) {
+        return {
+            patternName: `Cảnh Báo Bẻ Cầu Bệt (${last} ${streak} tay)`,
+            recommendation: opp(last),
+            confidence: 86,
+            reason: `Cầu Bệt ${last} đã dài ${streak} kỳ (vùng quá mua). AI kích hoạt lệnh Bẻ Cầu sang ${opp(last)}.`
+        };
+    }
+
+    // Default
     return {
-        patternName: primaryPattern,
-        recommendation: recommendation,
-        confidence: confidence,
-        reason: reasonText
+        patternName: `Theo Dòng (${last})`,
+        recommendation: last,
+        confidence: 72,
+        reason: `Dòng tiền đang ủng hộ nhịp ${last}. Ưu tiên bám theo xu hướng gần nhất.`
     };
 }
 
@@ -484,6 +473,23 @@ function copyCurrentPhucHop(count = 25) {
  * 5. Adjacent Boundary Flow (d1 ± 1, d5 ± 1)
  * 6. Extreme Cold/Gan Suppression Filter
  */
+const MAP_EXCHANGE = {
+    0: 9, 9: 0,
+    1: 2, 2: 1,
+    3: 6, 6: 3,
+    4: 8, 8: 4,
+    5: 7, 7: 5
+};
+
+/**
+ * MAX SIÊU CAO THỦ - Bắt 5 Chạm Cứng VIP & Dàn 25 Số Bất Bại
+ * Tích hợp 4 Cầu Vàng Bắt Chạm Gia Truyền của Cao Thủ:
+ * 1. Cầu Đơn Vị * 2 -> Chính nó & Bóng dương (Tự động quét nhịp ăn chính nó / bóng dương)
+ * 2. Cặp Chạm Vàng Quy Đổi Trăm (d3) & Đơn Vị (d5)
+ * 3. Cầu Đơn Vị * 2 Trừ 1
+ * 4. Cầu Đơn Vị * 2 Cộng 1
+ * Kết hợp Đỉnh Tam Giác Pascal & Khử Lô Gan Cực Đoan.
+ */
 function analyzeTop5Cham(history) {
     if (!history || history.length === 0) {
         const defaultTop = [
@@ -501,6 +507,11 @@ function analyzeTop5Cham(history) {
             tienDigits: masterDigits,
             hauDigits: masterDigits,
             masterDigits: masterDigits,
+            goldenPair: [7, 2],
+            unitDouble: [2, 7],
+            unitMinus: 1,
+            unitPlus: 3,
+            goldenFlowState: 'Chính nó & Bóng dương',
             top5: defaultTop,
             chamDigits: masterDigits,
             phucHopTien25: generatePhucHop25(masterDigits),
@@ -515,17 +526,17 @@ function analyzeTop5Cham(history) {
             probTien: 95,
             probHau: 95,
             probMaster: 98,
-            reason: 'Khởi tạo dàn 5 chạm hạt nhân chuẩn theo ma trận Pascal và cân bằng âm dương.'
+            reason: 'Khởi tạo dàn 5 chạm hạt nhân chuẩn theo 4 Cầu Vàng cao thủ và ma trận Pascal.'
         };
     }
 
     const n = history.length;
     const lastRound = history[n - 1];
-    const [d1, d2, d3, d4, d5] = lastRound.digits;
+    const [d1, d2, d3, d4, d5] = lastRound.digits.map(Number);
 
     const scores = Array(10).fill(0);
 
-    // TRỤ 1: ĐIỂM RƠI TRỰC TIẾP (KỲ T-1) - Trọng số cực đại
+    // TRỤ 1: ĐIỂM RƠI TRỰC TIẾP (KỲ T-1)
     scores[d1] += 180; // Số đầu Tiền Nhị
     scores[d2] += 180; // Số thứ 2 Tiền Nhị
     scores[d4] += 180; // Số thứ 4 Hậu Nhị
@@ -538,7 +549,39 @@ function analyzeTop5Cham(history) {
         scores[p] += 200; // Điểm hội tụ hạt nhân
     });
 
-    // TRỤ 3: CẦU TỔNG VỊ TRÍ MODULO 10
+    // TRỤ 3: 4 CẦU VÀNG BẮT CHẠM GIA TRUYỀN CỦA CAO THỦ
+    // Cầu 1: Con Đơn Vị * 2 -> Chính nó (u) & Bóng dương (u_bong)
+    const u = (d5 * 2) % 10;
+    const u_bong = (u + 5) % 10;
+    let hitChinhNo = 0, hitBong = 0;
+    for (let k = Math.max(0, n - 4); k < n - 1; k++) {
+        const prevD5 = history[k].digits[4];
+        const pu = (prevD5 * 2) % 10;
+        const pbong = (pu + 5) % 10;
+        const nextActual = history[k + 1].digits;
+        if (nextActual.includes(pu)) hitChinhNo++;
+        if (nextActual.includes(pbong)) hitBong++;
+    }
+    const scoreChinhNo = hitChinhNo >= hitBong ? 120 : 90;
+    const scoreBong = hitBong > hitChinhNo ? 120 : 90;
+    scores[u] += scoreChinhNo;
+    scores[u_bong] += scoreBong;
+
+    // Cầu 2: Cặp Chạm Vàng Quy Đổi Trăm (d3) & Đơn Vị (d5)
+    const r2_tram = MAP_EXCHANGE[d3] !== undefined ? MAP_EXCHANGE[d3] : (d3 + 5) % 10;
+    const r2_donvi = MAP_EXCHANGE[d5] !== undefined ? MAP_EXCHANGE[d5] : (d5 + 5) % 10;
+    scores[r2_tram] += 140;
+    scores[r2_donvi] += 140;
+
+    // Cầu 3: Con Đơn Vị * 2 Trừ 1
+    const r3 = (u - 1 + 10) % 10;
+    scores[r3] += 85;
+
+    // Cầu 4: Con Đơn Vị * 2 Cộng 1
+    const r4 = (u + 1) % 10;
+    scores[r4] += 85;
+
+    // TRỤ 4: CẦU TỔNG VỊ TRÍ MODULO 10
     const sumTien = (d1 + d2) % 10;
     const sumHau = (d4 + d5) % 10;
     const sumTotal = lastRound.digits.reduce((a, b) => a + b, 0) % 10;
@@ -546,18 +589,12 @@ function analyzeTop5Cham(history) {
     scores[sumHau] += 150;
     scores[sumTotal] += 130;
 
-    // TRỤ 4: BÓNG NGŨ HÀNH ÂM DƯƠNG CHỌN LỌC
+    // TRỤ 5: BÓNG NGŨ HÀNH ÂM DƯƠNG CHỌN LỌC
     const shadowD1 = getYinYangShadows(d1);
     const shadowD5 = getYinYangShadows(d5);
     scores[shadowD1.duong] += 100;
     scores[shadowD5.duong] += 100;
     scores[shadowD1.am] += 90;
-
-    // TRỤ 5: BƯỚC KỀ CẬN ±1 CỦA ĐẦU VÀ ĐUÔI
-    scores[(d1 + 1) % 10] += 85;
-    scores[(d1 + 9) % 10] += 85;
-    scores[(d5 + 1) % 10] += 85;
-    scores[(d5 + 9) % 10] += 85;
 
     // TRỤ 6: BẠC NHỚ KỲ T-2 VÀ T-3
     if (n >= 2) {
@@ -597,7 +634,8 @@ function analyzeTop5Cham(history) {
     const phucHopMaster20 = generatePhucHop20(masterDigits);
 
     const pascPeak = pascPeaks;
-    const reason = `Cầu 5 Chạm Cứng VIP Siêu Cấp: Bắt trúng [${masterDigits.join(', ')}] qua 4 Trụ Cầu Độc Lập (Cầu Rơi [${d1},${d2},${d4},${d5}], Đỉnh Pascal [${pascPeak.join(',')}], Tổng Vị Trí [${sumTien},${sumHau}] & Khử Lô Gan). Dàn 25 số bao trọn kép ghép từ 5 Chạm này.`;
+    const goldenFlowState = hitChinhNo >= hitBong ? `Chính nó (${u})` : `Bóng dương (${u_bong})`;
+    const reason = `Bắt trúng 5 Chạm VIP [${masterDigits.join(', ')}] qua 4 Cầu Vàng (Cặp Vàng Quy Đổi [${r2_tram},${r2_donvi}], Cầu Đơn Vị x2 [${u},${u_bong}] ưu tiên ${goldenFlowState}, Cầu Biên [${r3},${r4}]), kết hợp Đỉnh Pascal [${pascPeak.join(',')}], Điểm Rơi [${d1},${d2},${d4},${d5}] & Khử Lô Gan. Dàn 25 số bao trọn kép ghép từ 5 Chạm này.`;
 
     return {
         topTien: topMaster,
@@ -606,6 +644,11 @@ function analyzeTop5Cham(history) {
         tienDigits: masterDigits,
         hauDigits: masterDigits,
         masterDigits: masterDigits,
+        goldenPair: [r2_tram, r2_donvi],
+        unitDouble: [u, u_bong],
+        unitMinus: r3,
+        unitPlus: r4,
+        goldenFlowState,
         top5: topMaster,
         chamDigits: masterDigits,
         phucHopTien25: phucHopMaster25,
@@ -689,6 +732,11 @@ function generateAIPrediction(history) {
         hauDigits: chamAnalysis.hauDigits,
         topMaster: chamAnalysis.topMaster,
         masterDigits: chamAnalysis.masterDigits,
+        goldenPair: chamAnalysis.goldenPair || [7, 2],
+        unitDouble: chamAnalysis.unitDouble || [2, 7],
+        unitMinus: chamAnalysis.unitMinus !== undefined ? chamAnalysis.unitMinus : 1,
+        unitPlus: chamAnalysis.unitPlus !== undefined ? chamAnalysis.unitPlus : 3,
+        goldenFlowState: chamAnalysis.goldenFlowState || 'Chính nó & Bóng dương',
         phucHopTien25: chamAnalysis.phucHopTien25,
         phucHopTien20: chamAnalysis.phucHopTien20,
         phucHopHau25: chamAnalysis.phucHopHau25,
@@ -968,6 +1016,13 @@ function updatePredictionCard() {
         if (phucHopMasterDisplay) phucHopMasterDisplay.innerText = phucHopMaster.join(', ');
         if (predMasterConf) predMasterConf.innerText = `${probMaster}%`;
 
+        const goldenPairElem = document.getElementById('goldenPairVal');
+        const unitDoubleElem = document.getElementById('unitDoubleVal');
+        const unitBoundsElem = document.getElementById('unitBoundsVal');
+        if (goldenPairElem) goldenPairElem.innerText = `[${(nextPred.goldenPair || [7,2]).join(', ')}]`;
+        if (unitDoubleElem) unitDoubleElem.innerText = `[${(nextPred.unitDouble || [2,7]).join(', ')}]`;
+        if (unitBoundsElem) unitBoundsElem.innerText = `[${nextPred.unitMinus !== undefined ? nextPred.unitMinus : 1}, ${nextPred.unitPlus !== undefined ? nextPred.unitPlus : 3}]`;
+
         if (insightTextElem) insightTextElem.innerText = 'Chưa đủ dữ liệu. Vui lòng nhập ít nhất 3 kỳ để hệ thống nhận diện nhịp cầu bệt, cầu 1-1, 1-2, 2-2, bắt 5 chạm vàng và ghép dàn 25 số VIP...';
         if (tagsContainer) tagsContainer.innerHTML = '';
         return;
@@ -1002,6 +1057,20 @@ function updatePredictionCard() {
         phucHopMasterDisplay.innerText = phucHopMaster.join(', ');
     }
     if (predMasterConf) predMasterConf.innerText = `${probMaster}%`;
+
+    // Render 4 Golden Rules Breakdown
+    const goldenPairElem = document.getElementById('goldenPairVal');
+    const unitDoubleElem = document.getElementById('unitDoubleVal');
+    const unitBoundsElem = document.getElementById('unitBoundsVal');
+    if (goldenPairElem && nextPred.goldenPair) {
+        goldenPairElem.innerText = `[${nextPred.goldenPair.join(', ')}]`;
+    }
+    if (unitDoubleElem && nextPred.unitDouble) {
+        goldenPairElem && (unitDoubleElem.innerText = `[${nextPred.unitDouble.join(', ')}]`);
+    }
+    if (unitBoundsElem && nextPred.unitMinus !== undefined && nextPred.unitPlus !== undefined) {
+        unitBoundsElem.innerText = `[${nextPred.unitMinus}, ${nextPred.unitPlus}]`;
+    }
 
     // Render Insight Text
     if (insightTextElem) {

@@ -457,6 +457,31 @@ body {
     font-weight: 800;
 }
 
+.golden-rules-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 8px 0 10px 0;
+    font-size: 0.8rem;
+    align-items: center;
+}
+
+.golden-rule-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-muted);
+}
+
+.golden-rule-item b {
+    font-size: 0.88rem;
+    letter-spacing: 0.5px;
+}
+
 .phuc-hop-title-badge {
     font-size: 0.82rem;
     color: #fef08a;

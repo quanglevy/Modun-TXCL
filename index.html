@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=2.7">
+    <link rel="stylesheet" href="style.css?v=2.9">
 </head>
 <body>
     <div class="app-container">
@@ -102,6 +102,13 @@
                                     <div class="unified-conf-badge">
                                         Tỷ lệ nổ toàn cục: <b id="predMasterConf">0%</b>
                                     </div>
+                                </div>
+
+                                <!-- 4 CẦU VÀNG BẮT CHẠM CAO THỦ BREAKDOWN -->
+                                <div class="golden-rules-breakdown" id="goldenRulesBreakdown">
+                                    <span class="golden-rule-item" title="Hàng trăm & Đơn vị theo Bảng quy đổi 0-9, 1-2, 3-6, 4-8, 5-7"><i class="fa-solid fa-star text-gold"></i> Cặp Chạm Vàng: <b id="goldenPairVal" class="text-cyan">--</b></span>
+                                    <span class="golden-rule-item" title="Đơn vị x2 lấy chính nó hoặc bóng dương"><i class="fa-solid fa-bolt text-gold"></i> Đơn Vị x2: <b id="unitDoubleVal" class="text-yellow">--</b></span>
+                                    <span class="golden-rule-item" title="Đơn vị x2 trừ 1 & cộng 1"><i class="fa-solid fa-arrows-left-right text-gold"></i> Biên (±1): <b id="unitBoundsVal" class="text-green">--</b></span>
                                 </div>
 
                                 <div class="phuc-hop-box">
@@ -522,6 +529,6 @@
     </div>
 
     <!-- SOUND EFFECTS (OPTIONAL / WEB AUDIO API) -->
-    <script src="app.js?v=2.7"></script>
+    <script src="app.js?v=2.9"></script>
 </body>
 </html>
