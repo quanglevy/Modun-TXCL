@@ -1967,30 +1967,56 @@ body {
 }
 
 .frame-card-steps {
+.frame-steps-flow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.frame-step-item {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.76rem;
     display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 3px;
 }
 
-.frame-step-crumb {
-    font-size: 0.72rem;
-    padding: 2px 8px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.05);
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+.frame-step-item.step-hit {
+    border-color: rgba(16, 185, 129, 0.5);
+    background: rgba(16, 185, 129, 0.12);
 }
 
-.frame-step-crumb.crumb-hit {
-    background: rgba(16, 185, 129, 0.2);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.4);
+.frame-step-item.step-miss {
+    border-color: rgba(239, 68, 68, 0.25);
+    background: rgba(239, 68, 68, 0.06);
+}
+
+.frame-step-item .step-num {
     font-weight: 700;
+    color: var(--cyan-glow);
+    font-size: 0.78rem;
 }
 
-.frame-step-crumb.crumb-miss {
-    color: var(--text-dim);
+.frame-step-item .step-digits {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+}
+
+.frame-step-item .step-detail {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.frame-step-item .step-status {
+    margin-top: 2px;
+    font-weight: 700;
+    font-size: 0.75rem;
 }
 
 .frame-empty-hint {

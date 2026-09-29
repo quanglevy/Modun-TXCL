@@ -1292,9 +1292,15 @@ function updateFrameUI() {
             else stepBadge.innerText = 'TAY 3 / 3 (Quyết Đấu)';
         }
 
+        const nextPeriodInput = document.getElementById('periodInput');
+        const nextPeriodVal = (nextPeriodInput && nextPeriodInput.value) ? nextPeriodInput.value : `#${STATE.rounds.length + 1}`;
+
         if (originElem) {
             if (active.startPeriod && active.startPeriod !== 'Khởi đầu') {
-                originElem.innerHTML = `Kỳ <b>${active.startPeriod}</b> [${(active.startDigits || []).join('')}]`;
+                originElem.innerHTML = `
+                    <span><i class="fa-solid fa-flag-checkered text-cyan"></i> Mốc Gốc: <b>Kỳ ${active.startPeriod} [${(active.startDigits || []).join('')}]</b></span>
+                    <span style="margin-left: 8px;"><i class="fa-solid fa-crosshairs text-gold"></i> Đang Đánh Cho: <b class="text-green">${nextPeriodVal} (TAY ${tay}/3)</b></span>
+                `;
             } else {
                 originElem.innerText = 'Chờ kỳ đầu tiên';
             }
