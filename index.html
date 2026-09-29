@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Soi Cầu Tài Xỉu - Chẵn Lẻ 5 Số | Phân Tích Cầu Kèo VIP</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=2.6">
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>AI PREDICTOR <span>5-DIGIT PRO</span></h1>
+                    <p class="subtitle">MODULE PHÂN TÍCH TÀI XỈU - CHẴN LẺ & SOI NHỊP CẦU KÈO</p>
+                </div>
+            </div>
+            
+            <div class="header-controls">
+                <!-- Mode Selector -->
+                <div class="mode-select-box">
+                    <label><i class="fa-solid fa-sliders"></i> Chế độ tính:</label>
+                    <select id="calcModeSelect" onchange="changeCalculationMode()">
+                        <option value="sum5">Tổng 5 Số (Xổ số / 5D / Siêu Tốc)</option>
+                        <option value="last2">2 Số Cuối (Hàng Chục & Đơn vị)</option>
+                        <option value="last3">3 Số Cuối (Trăm + Chục + Đơn vị)</option>
+                        <option value="unitDigit">Chữ số hàng Đơn vị (0-4 X, 5-9 T)</option>
+                    </select>
+                </div>
+
+                <div class="action-buttons-quick">
+                    <button class="btn btn-outline" onclick="generateSampleData(25)" title="Tạo 25 kỳ mẫu để test">
+                        <i class="fa-solid fa-dice"></i> Mẫu 25 kỳ
+                    </button>
+                    <button class="btn btn-outline" onclick="exportData()" title="Xuất dữ liệu JSON">
+                        <i class="fa-solid fa-file-export"></i> Xuất dữ liệu
+                    </button>
+                    <label class="btn btn-outline file-upload-label" title="Nhập dữ liệu JSON">
+                        <i class="fa-solid fa-file-import"></i> Nhập file
+                        <input type="file" id="importFileInput" accept=".json" onchange="importData(event)" style="display: none;">
+                    </label>
+                    <button class="btn btn-danger-outline" onclick="clearAllData()" title="Xóa toàn bộ lịch sử">
+                        <i class="fa-solid fa-trash-can"></i> Xóa hết
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- TOP DASHBOARD: LIVE PREDICTION & 10-ROUND SUMMARY -->
+        <div class="grid-top-dashboard">
+            <!-- PREDICTION FOR NEXT ROUND (DỰ ĐOÁN KỲ TIẾP THEO) -->
+            <div class="card card-prediction glow-border">
+                <div class="card-header">
+                    <div class="badge-live"><span class="pulse-dot"></span> AI DỰ ĐOÁN KỲ TIẾP THEO</div>
+                    <span class="next-period-tag" id="nextPeriodDisplay">KỲ #001</span>
+                </div>
+                
+                <div class="prediction-body">
+                    <div class="prediction-results">
+                        <!-- TÀI / XỈU PREDICTION -->
+                        <div class="pred-box" id="predTxBox">
+                            <div class="pred-label">TÀI / XỈU</div>
+                            <div class="pred-value" id="predTxValue">--</div>
+                            <div class="confidence-bar-container">
+                                <div class="conf-bar-text">Độ tin cậy: <span id="predTxConf">0%</span></div>
+                                <div class="progress-bar"><div class="progress-fill" id="predTxBar" style="width: 0%;"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- CHẴN / LẺ PREDICTION -->
+                        <div class="pred-box" id="predClBox">
+                            <div class="pred-label">CHẴN / LẺ</div>
+                            <div class="pred-value" id="predClValue">--</div>
+                            <div class="confidence-bar-container">
+                                <div class="conf-bar-text">Độ tin cậy: <span id="predClConf">0%</span></div>
+                                <div class="progress-bar"><div class="progress-fill" id="predClBar" style="width: 0%;"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- BẮT 5 CHẠM VÀNG & GHÉP DÀN 25 SỐ VIP (ĐÁNH CHUNG TIỀN NHỊ & HẬU NHỊ) -->
+                        <div class="pred-box pred-box-cham" id="predChamBox">
+                            <div class="pred-label"><i class="fa-solid fa-crown text-gold"></i> BẮT 5 CHẠM VÀNG & GHÉP DÀN 25 SỐ VIP (ĐÁNH CHUNG TIỀN NHỊ & HẬU NHỊ)</div>
+
+                            <div class="phuc-hop-unified-card">
+                                <div class="unified-top-bar">
+                                    <div class="cham-pills-display" id="predChamListMaster">
+                                        <div class="cham-tag-pill"><span class="cham-num">--</span> <span class="cham-prob">0%</span></div>
+                                        <div class="cham-tag-pill"><span class="cham-num">--</span> <span class="cham-prob">0%</span></div>
+                                        <div class="cham-tag-pill"><span class="cham-num">--</span> <span class="cham-prob">0%</span></div>
+                                        <div class="cham-tag-pill"><span class="cham-num">--</span> <span class="cham-prob">0%</span></div>
+                                        <div class="cham-tag-pill"><span class="cham-num">--</span> <span class="cham-prob">0%</span></div>
+                                    </div>
+                                    <div class="unified-conf-badge">
+                                        Tỷ lệ nổ toàn cục: <b id="predMasterConf">0%</b>
+                                    </div>
+                                </div>
+
+                                <div class="phuc-hop-box">
+                                    <div class="phuc-hop-header">
+                                        <span class="phuc-hop-title-badge">
+                                            <i class="fa-solid fa-layer-group text-gold"></i> 
+                                            <b>DÀN 25 SỐ GHÉP 5 CHẠM (Bao Kép Bằng & Kép Lệch - Đánh Tiền Nhị & Hậu Nhị):</b>
+                                        </span>
+                                        <div class="phuc-hop-actions">
+                                            <button type="button" class="btn-copy-phuchop btn-copy-master-main" onclick="copyUnifiedPhucHop(25)" title="Sao chép 25 số VIP (có kép)">
+                                                <i class="fa-solid fa-copy"></i> Copy 25 Số VIP (Có Kép)
+                                            </button>
+                                            <button type="button" class="btn-copy-phuchop btn-copy-secondary" onclick="copyUnifiedPhucHop(20)" title="Sao chép 20 số VIP (bỏ kép)">
+                                                <i class="fa-solid fa-copy"></i> Copy 20 Số (Bỏ Kép)
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="phuc-hop-list list-unified-vip" id="phucHopMasterListDisplay">Đang tính toán dàn 25 số...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BRIDGE ANALYSIS INSIGHT (CẦU KÈO PHÁT HIỆN) -->
+                    <div class="bridge-insight-box">
+                        <div class="insight-header"><i class="fa-solid fa-chart-line"></i> Nhận định nhịp cầu & hàng số AI:</div>
+                        <div class="insight-content" id="bridgeInsightText">
+                            Chưa đủ dữ liệu. Vui lòng nhập ít nhất 3 kỳ để hệ thống nhận diện nhịp cầu bệt, cầu 1-1, 1-2, 2-2, bắt top 5 chạm và ghép dàn 25 số...
+                        </div>
+                        <div class="bridge-tags" id="bridgeTagsContainer">
+                            <!-- Dynamic Badges -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10-ROUND SUMMARY (TÀI XỈU, CHẴN LẺ, TIỀN NHỊ, HẬU NHỊ & 5 CHẠM) -->
+            <div class="card card-stats">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-trophy"></i> HIỆU SUẤT ĐỐI SOÁT 10 KỲ GẦN NHẤT</h3>
+                    <span class="period-count-badge" id="totalRoundsBadge">0 Kỳ</span>
+                </div>
+
+                <!-- DÒNG 1: THỐNG KÊ TÀI / XỈU -->
+                <div class="stat-row-block">
+                    <div class="stat-row-header">
+                        <div class="stat-row-title"><i class="fa-solid fa-dice text-red"></i> <b>THỐNG KÊ TÀI / XỈU (10 KỲ)</b></div>
+                        <div class="stat-row-metrics">
+                            <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="txHupCount">0</b></span>
+                            <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="txGayCount">0</b></span>
+                            <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="txWinRate">0%</b></span>
+                        </div>
+                    </div>
+                    <div class="tracker-badges-grid" id="last10BadgesTx">
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                    </div>
+                </div>
+
+                <!-- DÒNG 2: THỐNG KÊ CHẴN / LẺ -->
+                <div class="stat-row-block">
+                    <div class="stat-row-header">
+                        <div class="stat-row-title"><i class="fa-solid fa-scale-balanced text-purple"></i> <b>THỐNG KÊ CHẴN / LẺ (10 KỲ)</b></div>
+                        <div class="stat-row-metrics">
+                            <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="clHupCount">0</b></span>
+                            <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="clGayCount">0</b></span>
+                            <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="clWinRate">0%</b></span>
+                        </div>
+                    </div>
+                    <div class="tracker-badges-grid" id="last10BadgesCl">
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                    </div>
+                </div>
+
+                <!-- DÒNG 3: THỐNG KÊ TIỀN NHỊ (25 SỐ ĐẦU) -->
+                <div class="stat-row-block" style="border-color: rgba(56, 189, 248, 0.3);">
+                    <div class="stat-row-header">
+                        <div class="stat-row-title"><i class="fa-solid fa-angles-left text-cyan"></i> <b>THỐNG KÊ TIỀN NHỊ (2 SỐ ĐẦU - 25 SỐ)</b></div>
+                        <div class="stat-row-metrics">
+                            <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="tienNhiHupCount">0</b></span>
+                            <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="tienNhiGayCount">0</b></span>
+                            <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="tienNhiWinRate">0%</b></span>
+                        </div>
+                    </div>
+                    <div class="tracker-badges-grid" id="last10BadgesTienNhi">
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                    </div>
+                </div>
+
+                <!-- DÒNG 4: THỐNG KÊ HẬU NHỊ (25 SỐ ĐUÔI) -->
+                <div class="stat-row-block" style="border-color: rgba(168, 85, 247, 0.3);">
+                    <div class="stat-row-header">
+                        <div class="stat-row-title"><i class="fa-solid fa-angles-right text-purple"></i> <b>THỐNG KÊ HẬU NHỊ (2 SỐ ĐUÔI - 25 SỐ)</b></div>
+                        <div class="stat-row-metrics">
+                            <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="hauNhiHupCount">0</b></span>
+                            <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="hauNhiGayCount">0</b></span>
+                            <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="hauNhiWinRate">0%</b></span>
+                        </div>
+                    </div>
+                    <div class="tracker-badges-grid" id="last10BadgesHauNhi">
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                        <div class="empty-badge-slot">-</div>
+                    </div>
+                </div>
+
+                <!-- DÒNG 5: THỐNG KÊ CHI TIẾT 5 CHẠM VIP THEO THỨ TỰ TỶ LỆ (% CAO ➔ THẤP) -->
+                <div class="stat-row-block cham-multilevel-block">
+                    <div class="stat-row-header">
+                        <div class="stat-row-title">
+                            <i class="fa-solid fa-crown text-gold"></i> 
+                            <b>THỐNG KÊ 5 TẦNG CHẠM (% CAO ➔ THẤP)</b>
+                        </div>
+                        <div class="stat-row-metrics">
+                            <span class="metric-pill pill-hup" title="Số kỳ dàn 5 chạm nổ ít nhất 1 số"><i class="fa-solid fa-circle-check"></i> Dàn 5C: <b id="chamHupCount">0</b></span>
+                            <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Dàn: <b id="chamWinRate">0%</b></span>
+                        </div>
+                    </div>
+
+                    <!-- TẦNG 1: CHẠM TOP 1 (% TỶ LỆ RA CAO NHẤT) -->
+                    <div class="cham-tier-row">
+                        <div class="cham-tier-label">
+                            <span class="tier-badge tier-gold"><i class="fa-solid fa-crown"></i> TOP 1 (% Cao Nhất)</span>
+                            <span class="tier-stat">Trúng: <b id="cham1HupCount" class="text-green">0</b>/10 (<b id="cham1Rate" class="text-cyan">0%</b>)</span>
+                        </div>
+                        <div class="tracker-badges-grid" id="last10BadgesCham1">
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                        </div>
+                    </div>
+
+                    <!-- TẦNG 2: CHẠM TOP 2 (% TỶ LỆ RA THỨ 2) -->
+                    <div class="cham-tier-row">
+                        <div class="cham-tier-label">
+                            <span class="tier-badge tier-silver"><i class="fa-solid fa-medal"></i> TOP 2 (% Thứ 2)</span>
+                            <span class="tier-stat">Trúng: <b id="cham2HupCount" class="text-green">0</b>/10 (<b id="cham2Rate" class="text-cyan">0%</b>)</span>
+                        </div>
+                        <div class="tracker-badges-grid" id="last10BadgesCham2">
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                        </div>
+                    </div>
+
+                    <!-- TẦNG 3: CHẠM TOP 3 (% TỶ LỆ RA THỨ 3) -->
+                    <div class="cham-tier-row">
+                        <div class="cham-tier-label">
+                            <span class="tier-badge tier-bronze"><i class="fa-solid fa-award"></i> TOP 3 (% Thứ 3)</span>
+                            <span class="tier-stat">Trúng: <b id="cham3HupCount" class="text-green">0</b>/10 (<b id="cham3Rate" class="text-cyan">0%</b>)</span>
+                        </div>
+                        <div class="tracker-badges-grid" id="last10BadgesCham3">
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                        </div>
+                    </div>
+
+                    <!-- TẦNG 4: CHẠM TOP 4 (% TỶ LỆ RA THỨ 4) -->
+                    <div class="cham-tier-row">
+                        <div class="cham-tier-label">
+                            <span class="tier-badge tier-top4"><i class="fa-solid fa-star"></i> TOP 4 (% Thứ 4)</span>
+                            <span class="tier-stat">Trúng: <b id="cham4HupCount" class="text-green">0</b>/10 (<b id="cham4Rate" class="text-cyan">0%</b>)</span>
+                        </div>
+                        <div class="tracker-badges-grid" id="last10BadgesCham4">
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                        </div>
+                    </div>
+
+                    <!-- TẦNG 5: CHẠM TOP 5 (% TỶ LỆ RA THỨ 5) -->
+                    <div class="cham-tier-row">
+                        <div class="cham-tier-label">
+                            <span class="tier-badge tier-top5"><i class="fa-solid fa-shield-halved"></i> TOP 5 (% Thứ 5)</span>
+                            <span class="tier-stat">Trúng: <b id="cham5HupCount" class="text-green">0</b>/10 (<b id="cham5Rate" class="text-cyan">0%</b>)</span>
+                        </div>
+                        <div class="tracker-badges-grid" id="last10BadgesCham5">
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="streak-info">
+                    <span><i class="fa-solid fa-fire text-red"></i> Nhịp TX: <b id="txStreakStatus" class="text-green">--</b></span>
+                    <span><i class="fa-solid fa-bolt text-purple"></i> Nhịp CL: <b id="clStreakStatus" class="text-green">--</b></span>
+                    <span><i class="fa-solid fa-bullseye text-gold"></i> Dàn 5 Chạm: <b id="chamStreakStatus" class="text-green">--</b></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- MIDDLE SECTION: INPUT RESULT & QUICK ENTRY -->
+        <div class="grid-middle-section">
+            <!-- INPUT PANEL (NHẬP KẾT QUẢ KỲ QUAY) -->
+            <div class="card card-input">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-keyboard"></i> NHẬP KẾT QUẢ KỲ QUAY (5 SỐ LIỀN NHAU)</h3>
+                    <span class="rule-hint" id="modeRuleHint">Quy ước: Tổng ≥ 23 Tài, ≤ 22 Xỉu</span>
+                </div>
+
+                <form id="resultForm" onsubmit="handleFormSubmit(event)">
+                    <div class="single-input-row">
+                        <!-- Kỳ quay -->
+                        <div class="form-group period-compact-group">
+                            <label for="periodInput"><i class="fa-solid fa-hashtag"></i> Kỳ quay</label>
+                            <input type="text" id="periodInput" placeholder="101" required>
+                        </div>
+
+                        <!-- Ô nhập 5 số liền nhau -->
+                        <div class="form-group digit5-group">
+                            <label for="digit5Input"><i class="fa-solid fa-calculator"></i> Kết quả 5 số (Gõ liền nhau, ấn Enter để soi tiếp)</label>
+                            <div class="digit5-input-wrapper">
+                                <i class="fa-solid fa-dice-five input-icon"></i>
+                                <input type="text" 
+                                       id="digit5Input" 
+                                       inputmode="numeric" 
+                                       pattern="[0-9]*" 
+                                       maxlength="5" 
+                                       placeholder="VD: 56892" 
+                                       autofocus 
+                                       autocomplete="off" 
+                                       required 
+                                       oninput="handleDigit5Input(this.value)">
+                                <button type="button" class="btn-clear-input" onclick="clearInputBox()" title="Xóa nhanh">
+                                    <i class="fa-solid fa-circle-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Nút Thêm Kết Quả -->
+                        <div class="form-group submit-btn-group">
+                            <button type="submit" class="btn btn-primary btn-submit-result">
+                                <i class="fa-solid fa-bolt"></i> THÊM & SOI TIẾP (ENTER)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Breakdown Preview -->
+                    <div class="live-preview-bar" id="livePreviewBar">
+                        <span class="preview-hint"><i class="fa-solid fa-info-circle"></i> Nhập 5 số để xem giải mã vị trí: Chục Ngàn - Ngàn - Trăm - Chục - Đơn Vị</span>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- VISUAL ROADMAP SECTION (TÀI XỈU & CHẴN LẺ HIỂN THỊ ĐỒNG THỜI - ĐẶT TRƯỚC BẢNG LỊCH SỬ) -->
+        <div class="grid-bottom-section">
+            <div class="card card-roadmap">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-diagram-project"></i> BẢNG SOI NHỊP CẦU TRỰC QUAN (ROADMAP)</h3>
+                    <div class="roadmap-header-stats">
+                        <span class="badge-tag-tx tag-tai"><i class="fa-solid fa-dice text-red"></i> Cầu Tài / Xỉu</span>
+                        <span class="badge-tag-tx tag-chan" style="margin-left: 6px;"><i class="fa-solid fa-scale-balanced text-purple"></i> Cầu Chẵn / Lẻ</span>
+                    </div>
+                </div>
+
+                <div class="roadmap-dual-container">
+                    <!-- MỤC 1: BẢNG SOI NHỊP CẦU TÀI / XỈU -->
+                    <div class="roadmap-block">
+                        <div class="roadmap-block-header">
+                            <div class="roadmap-title">
+                                <i class="fa-solid fa-dice text-red"></i> <b>1. BẢNG SOI NHỊP CẦU TÀI / XỈU</b>
+                            </div>
+                            <div class="roadmap-legend">
+                                <div class="legend-item"><span class="bead bead-tai">T</span> Tài</div>
+                                <div class="legend-item"><span class="bead bead-xiu">X</span> Xỉu</div>
+                                <div class="legend-item"><span class="badge-hup-mini">Viền Xanh: HÚP</span></div>
+                                <div class="legend-item"><span class="badge-gay-mini">Viền Đỏ: GÃY</span></div>
+                            </div>
+                        </div>
+                        <div class="road-grid-wrapper" id="roadGridContainerTx">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- MỤC 2: BẢNG SOI NHỊP CẦU CHẴN / LẺ (HIỆN NGAY BÊN DƯỚI) -->
+                    <div class="roadmap-block">
+                        <div class="roadmap-block-header">
+                            <div class="roadmap-title">
+                                <i class="fa-solid fa-scale-balanced text-purple"></i> <b>2. BẢNG SOI NHỊP CẦU CHẴN / LẺ</b>
+                            </div>
+                            <div class="roadmap-legend">
+                                <div class="legend-item"><span class="bead bead-chan">C</span> Chẵn</div>
+                                <div class="legend-item"><span class="bead bead-le">L</span> Lẻ</div>
+                                <div class="legend-item"><span class="badge-hup-mini">Viền Xanh: HÚP</span></div>
+                                <div class="legend-item"><span class="badge-gay-mini">Viền Đỏ: GÃY</span></div>
+                            </div>
+                        </div>
+                        <div class="road-grid-wrapper" id="roadGridContainerCl">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTS SECTION: 10-ROUND HISTORY TABLE (PROMINENTLY DISPLAYED) -->
+        <div class="card card-history glow-border" id="recentResultsSection">
+            <div class="card-header">
+                <h3>
+                    <i class="fa-solid fa-list-check"></i> 
+                    <span id="tableTitleDisplay">KẾT QUẢ 10 KỲ QUAY GẦN NHẤT</span>
+                </h3>
+                
+                <div class="table-controls-bar">
+                    <button class="btn btn-sm btn-outline" onclick="undoLastRound()" title="Xóa kỳ vừa nhập">
+                        <i class="fa-solid fa-rotate-left"></i> Xóa kỳ vừa nhập
+                    </button>
+                    <button class="btn btn-sm btn-danger-outline" onclick="clearAllData()" title="Xóa toàn bộ lịch sử tất cả các kỳ">
+                        <i class="fa-solid fa-trash-can"></i> Xóa tất cả các kỳ
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="history-table" id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Kỳ Quay</th>
+                            <th>5 Con Số Ra</th>
+                            <th>Tổng & Chi Tiết</th>
+                            <th>Kết QuẢ Thực</th>
+                            <th>Dự Đoán TX / CL</th>
+                            <th>AI Bắt 5 Chạm</th>
+                            <th>Đối Soát TX</th>
+                            <th>Đối Soát CL</th>
+                            <th>Đối Soát 5 Chạm</th>
+                            <th>Tiền Nhị / Hậu Nhị (25 Số)</th>
+                            <th>Nhịp Cầu Nhận Diện</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr>
+                            <td colspan="12" class="empty-table-msg">
+                                <i class="fa-solid fa-inbox"></i> Chưa có dữ liệu kỳ quay nào. Hãy nhập kỳ đầu tiên ở trên hoặc bấm "Mẫu 25 kỳ" để thử nghiệm!
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="app-footer">
+            <p>Phần mềm Module Dự Đoán Tài Xỉu - Chẵn Lẻ 5 Số AI © 2026 | Tự động phân tích cầu bệt, cầu 1-1, 1-2, 2-2, Markov Chain & Nhận diện nhịp gãy/húp</p>
+        </footer>
+    </div>
+
+    <!-- SOUND EFFECTS (OPTIONAL / WEB AUDIO API) -->
+    <script src="app.js?v=2.6"></script>
+</body>
+</html>
