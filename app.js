@@ -964,6 +964,7 @@ function clearAllData() {
 
 function updateAllViews() {
     updatePredictionCard();
+    updateFrameUI();
     update10RoundStats();
     updateRoadmap();
     updateHistoryTable();
@@ -1085,6 +1086,344 @@ function updatePredictionCard() {
             <span class="bridge-tag" style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:rgba(245,158,11,0.4);"><i class="fa-solid fa-crown text-gold"></i> Dàn 25 Số VIP (${phucHopMaster.length} số - Đánh Tiền & Hậu)</span>
         `;
     }
+}
+
+/* ==========================================================================
+   NUÔI DÀN 25 KHUNG 3 KỲ (TRÚNG LÀ DỪNG / ĐỔI DÀN)
+   ========================================================================== */
+
+function computeFrameHistory(rounds) {
+    if (!rounds || rounds.length === 0) {
+        const defaultCham = [8, 5, 7, 0, 9];
+        return {
+            frames: [],
+            activeFrame: {
+                frameId: 1,
+                startPeriod: 'Khởi đầu',
+                startDigits: [5, 6, 8, 9, 2],
+                cham5: defaultCham,
+                dan25: generatePhucHop25(defaultCham),
+                dan20: generatePhucHop20(defaultCham),
+                steps: [],
+                currentTay: 1,
+                status: 'running'
+            },
+            stats: {
+                totalDone: 0,
+                totalWon: 0,
+                winRate: 0,
+                wonStep1: 0,
+                wonStep2: 0,
+                wonStep3: 0,
+                lostFrames: 0,
+                rateStep1: 0,
+                rateStep2: 0,
+                rateStep3: 0,
+                rateLost: 0
+            }
+        };
+    }
+
+    const frames = [];
+    let currentFrame = null;
+    const historySoFar = [];
+
+    for (let i = 0; i < rounds.length; i++) {
+        const r = rounds[i];
+
+        if (!currentFrame) {
+            // Khởi tạo Khung #1 từ kỳ đầu tiên
+            historySoFar.push(r);
+            const chamInfo = analyzeTop5Cham(historySoFar);
+            const cham5 = chamInfo.masterDigits;
+            currentFrame = {
+                frameId: frames.length + 1,
+                startPeriod: r.period,
+                startDigits: r.digits,
+                cham5: cham5,
+                dan25: generatePhucHop25(cham5),
+                dan20: generatePhucHop20(cham5),
+                goldenPair: chamInfo.goldenPair,
+                unitDouble: chamInfo.unitDouble,
+                steps: [],
+                isResolved: false,
+                wonStep: null,
+                status: 'running'
+            };
+        } else {
+            // Đối soát kỳ quay r với Khung đang chạy
+            const stepNum = currentFrame.steps.length + 1; // Tay 1, 2 hoặc 3
+            const tien = `${r.digits[0]}${r.digits[1]}`;
+            const hau = `${r.digits[3]}${r.digits[4]}`;
+            const hitTien = currentFrame.dan25.includes(tien);
+            const hitHau = currentFrame.dan25.includes(hau);
+            const isHit = hitTien || hitHau;
+
+            currentFrame.steps.push({
+                stepNum,
+                period: r.period,
+                digits: r.digits,
+                tien,
+                hau,
+                hitTien,
+                hitHau,
+                isHit
+            });
+
+            historySoFar.push(r);
+
+            if (isHit) {
+                // TRÚNG KHUNG: Đánh dấu Húp, lưu khung và ĐỔI DÀN NGAY LẬP TỨC từ kỳ vừa trúng này
+                currentFrame.isResolved = true;
+                currentFrame.wonStep = stepNum;
+                currentFrame.status = 'won';
+                currentFrame.winType = (hitTien && hitHau) ? 'Cả Tiền & Hậu' : (hitTien ? 'Tiền Nhị' : 'Hậu Nhị');
+                frames.push(currentFrame);
+
+                // Khởi tạo Khung Mới từ kết quả kỳ r vừa trúng
+                const nextCham = analyzeTop5Cham(historySoFar);
+                currentFrame = {
+                    frameId: frames.length + 1,
+                    startPeriod: r.period,
+                    startDigits: r.digits,
+                    cham5: nextCham.masterDigits,
+                    dan25: generatePhucHop25(nextCham.masterDigits),
+                    dan20: generatePhucHop20(nextCham.masterDigits),
+                    goldenPair: nextCham.goldenPair,
+                    unitDouble: nextCham.unitDouble,
+                    steps: [],
+                    isResolved: false,
+                    wonStep: null,
+                    status: 'running'
+                };
+            } else {
+                if (stepNum >= 3) {
+                    // GÃY KHUNG: Quá 3 tay không trúng -> Chốt Gãy Khung và mở Khung Mới từ kỳ thứ 3
+                    currentFrame.isResolved = true;
+                    currentFrame.status = 'lost';
+                    frames.push(currentFrame);
+
+                    // Khởi tạo Khung Mới từ kỳ thứ 3 này
+                    const nextCham = analyzeTop5Cham(historySoFar);
+                    currentFrame = {
+                        frameId: frames.length + 1,
+                        startPeriod: r.period,
+                        startDigits: r.digits,
+                        cham5: nextCham.masterDigits,
+                        dan25: generatePhucHop25(nextCham.masterDigits),
+                        dan20: generatePhucHop20(nextCham.masterDigits),
+                        goldenPair: nextCham.goldenPair,
+                        unitDouble: nextCham.unitDouble,
+                        steps: [],
+                        isResolved: false,
+                        wonStep: null,
+                        status: 'running'
+                    };
+                }
+            }
+        }
+    }
+
+    if (currentFrame) {
+        currentFrame.currentTay = currentFrame.steps.length + 1;
+    }
+
+    let won1 = 0, won2 = 0, won3 = 0, lost = 0;
+    frames.forEach(f => {
+        if (f.status === 'won') {
+            if (f.wonStep === 1) won1++;
+            else if (f.wonStep === 2) won2++;
+            else if (f.wonStep === 3) won3++;
+        } else {
+            lost++;
+        }
+    });
+
+    const totalDone = frames.length;
+    const totalWon = won1 + won2 + won3;
+    const stats = {
+        totalDone,
+        totalWon,
+        winRate: totalDone > 0 ? Math.round((totalWon / totalDone) * 100) : 0,
+        wonStep1: won1,
+        wonStep2: won2,
+        wonStep3: won3,
+        lostFrames: lost,
+        rateStep1: totalDone > 0 ? Math.round((won1 / totalDone) * 100) : 0,
+        rateStep2: totalDone > 0 ? Math.round((won2 / totalDone) * 100) : 0,
+        rateStep3: totalDone > 0 ? Math.round((won3 / totalDone) * 100) : 0,
+        rateLost: totalDone > 0 ? Math.round((lost / totalDone) * 100) : 0
+    };
+
+    return {
+        frames,
+        activeFrame: currentFrame,
+        stats
+    };
+}
+
+/**
+ * Update UI for Frame Nurturing Cards (Active Frame & Past Frames History)
+ */
+function updateFrameUI() {
+    const frameData = computeFrameHistory(STATE.rounds);
+    const active = frameData.activeFrame;
+    const stats = frameData.stats;
+    const frames = frameData.frames;
+
+    // 1. UPDATE ACTIVE FRAME CARD
+    const activeTitle = document.getElementById('activeFrameTitle');
+    const stepBadge = document.getElementById('activeFrameStepBadge');
+    const originElem = document.getElementById('activeFrameOrigin');
+    const betAdvice = document.getElementById('activeFrameBetAdvice');
+    const chamPillsElem = document.getElementById('activeFrameChamPills');
+    const danDisplay = document.getElementById('activeFrameDanDisplay');
+
+    if (active) {
+        if (activeTitle) {
+            activeTitle.innerHTML = `<i class="fa-solid fa-crosshairs text-gold"></i> NUÔI DÀN 25 KHUNG 3 KỲ - KHUNG #${active.frameId || 1}`;
+        }
+
+        const tay = active.currentTay || 1;
+        if (stepBadge) {
+            stepBadge.className = `frame-step-badge badge-step${tay}`;
+            if (tay === 1) stepBadge.innerText = 'TAY 1 / 3 (Khởi Đầu)';
+            else if (tay === 2) stepBadge.innerText = 'TAY 2 / 3 (Gấp Thếp)';
+            else stepBadge.innerText = 'TAY 3 / 3 (Quyết Đấu)';
+        }
+
+        if (originElem) {
+            if (active.startPeriod && active.startPeriod !== 'Khởi đầu') {
+                originElem.innerHTML = `Kỳ <b>${active.startPeriod}</b> [${(active.startDigits || []).join('')}]`;
+            } else {
+                originElem.innerText = 'Chờ kỳ đầu tiên';
+            }
+        }
+
+        if (betAdvice) {
+            if (tay === 1) {
+                betAdvice.innerHTML = '<span class="text-green">Vốn x1 (Thăm Dò Nhịp)</span>';
+            } else if (tay === 2) {
+                betAdvice.innerHTML = '<span class="text-yellow">Vốn x2 (Hoặc x3 - Gấp Thếp)</span>';
+            } else {
+                betAdvice.innerHTML = '<span class="text-red">Vốn x4 (Hoặc x8 - Tay Quyết Đấu)</span>';
+            }
+        }
+
+        if (chamPillsElem && active.cham5) {
+            chamPillsElem.innerHTML = active.cham5.map(d => `
+                <div class="cham-tag-pill"><span class="cham-num">C.${d}</span></div>
+            `).join('');
+        }
+
+        if (danDisplay && active.dan25) {
+            danDisplay.innerText = active.dan25.join(', ');
+        }
+    }
+
+    // 2. UPDATE FRAME STATS SUMMARY
+    const totalFramesBadge = document.getElementById('totalFramesBadge');
+    const fStatWinRate = document.getElementById('fStatWinRate');
+    const fStatWinRatio = document.getElementById('fStatWinRatio');
+    const fStatStep1 = document.getElementById('fStatStep1');
+    const fStatStep1Ratio = document.getElementById('fStatStep1Ratio');
+    const fStatStep2 = document.getElementById('fStatStep2');
+    const fStatStep2Ratio = document.getElementById('fStatStep2Ratio');
+    const fStatStep3 = document.getElementById('fStatStep3');
+    const fStatStep3Ratio = document.getElementById('fStatStep3Ratio');
+
+    if (totalFramesBadge) totalFramesBadge.innerText = `${stats.totalDone} Khung Đã Xong`;
+    if (fStatWinRate) fStatWinRate.innerText = `${stats.winRate}%`;
+    if (fStatWinRatio) fStatWinRatio.innerText = `${stats.totalWon}/${stats.totalDone} Khung`;
+    if (fStatStep1) fStatStep1.innerText = `${stats.rateStep1}%`;
+    if (fStatStep1Ratio) fStatStep1Ratio.innerText = `${stats.wonStep1} Khung`;
+    if (fStatStep2) fStatStep2.innerText = `${stats.rateStep2}%`;
+    if (fStatStep2Ratio) fStatStep2Ratio.innerText = `${stats.wonStep2} Khung`;
+    if (fStatStep3) fStatStep3.innerText = `${stats.rateStep3}%`;
+    if (fStatStep3Ratio) fStatStep3Ratio.innerText = `${stats.wonStep3} Khung`;
+
+    // 3. UPDATE FRAME HISTORY LIST
+    const listContainer = document.getElementById('frameHistoryListContainer');
+    if (listContainer) {
+        if (frames.length === 0) {
+            listContainer.innerHTML = `<div class="frame-empty-hint"><i class="fa-solid fa-clock-rotate-left"></i> Chưa có khung nào hoàn tất. Nhập kết quả để xem AI tự động theo dõi từng chu kỳ 3 kỳ!</div>`;
+        } else {
+            const reversedFrames = [...frames].reverse();
+            let html = '';
+            reversedFrames.forEach(f => {
+                const isWon = f.status === 'won';
+                const statusBadge = isWon
+                    ? `<span class="frame-status-badge status-won"><i class="fa-solid fa-check"></i> HÚP TAY ${f.wonStep} ✓ (${f.winType})</span>`
+                    : `<span class="frame-status-badge status-lost"><i class="fa-solid fa-xmark"></i> GÃY KHUNG ✗</span>`;
+
+                const chamPills = f.cham5.map(d => `<span class="cham-tag-pill" style="padding:2px 8px; font-size:0.75rem;"><span class="cham-num">C.${d}</span></span>`).join('');
+
+                const stepsHtml = f.steps.map(s => `
+                    <div class="frame-step-item ${s.isHit ? 'step-hit' : 'step-miss'}">
+                        <div class="step-num">Tay ${s.stepNum} (Kỳ ${s.period})</div>
+                        <div class="step-digits">${s.digits.join('')}</div>
+                        <div class="step-detail">
+                            Tiền: <b>${s.tien}</b> ${s.hitTien ? '<span class="text-green">✓</span>' : '<span class="text-red">✗</span>'} | 
+                            Hậu: <b>${s.hau}</b> ${s.hitHau ? '<span class="text-green">✓</span>' : '<span class="text-red">✗</span>'}
+                        </div>
+                        <div class="step-status">${s.isHit ? '<b class="text-green">HÚP ✓</b>' : '<span class="text-dim">Trượt</span>'}</div>
+                    </div>
+                `).join('');
+
+                html += `
+                    <div class="frame-card-item">
+                        <div class="frame-card-header">
+                            <div class="frame-card-title">
+                                <i class="fa-solid fa-crosshairs text-gold"></i> 
+                                <b>KHUNG #${f.frameId}</b> 
+                                <span style="font-size:0.8rem; color:var(--text-dim); margin-left:6px;">(Mốc Kỳ ${f.startPeriod} [${f.startDigits.join('')}])</span>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                        <div class="frame-cham-row" style="margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.82rem; color:var(--text-dim);">5 Chạm:</span>
+                            <div class="cham-pills-display" style="gap:4px;">
+                                ${chamPills}
+                            </div>
+                        </div>
+                        <div class="frame-steps-flow">
+                            ${stepsHtml}
+                        </div>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = html;
+        }
+    }
+}
+
+/**
+ * Fast clipboard copy for active frame 25/20 numbers
+ */
+function copyActiveFrameDan(count = 25) {
+    const frameData = computeFrameHistory(STATE.rounds);
+    const active = frameData.activeFrame;
+    if (!active) return;
+
+    let numbers = active.dan25;
+    let label = '25 số VIP bao trọn kép';
+    if (count === 20) {
+        numbers = active.dan20 || generatePhucHop20(active.cham5);
+        label = '20 số VIP bỏ kép';
+    }
+
+    const text = numbers.join(', ');
+    navigator.clipboard.writeText(text).then(() => {
+        alert(`ĐÃ SAO CHÉP DÀN NUÔI KHUNG (${label.toUpperCase()}) - TAY ${active.currentTay}/3!\n\nDàn số (${numbers.length} số): ` + text);
+    }).catch(() => {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        alert(`ĐÃ SAO CHÉP DÀN NUÔI KHUNG (${label.toUpperCase()}) - TAY ${active.currentTay}/3!\n\nDàn số (${numbers.length} số): ` + text);
+    });
 }
 
 /**
