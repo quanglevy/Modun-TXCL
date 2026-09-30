@@ -434,6 +434,21 @@ body {
     color: #fde68a;
 }
 
+.cham-bridge-name {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-top: 4px;
+    white-space: nowrap;
+    text-align: center;
+    line-height: 1.15;
+    letter-spacing: 0.2px;
+}
+
 /* ==========================================================================
    UNIFIED 5 CHẠM & DÀN 25 SỐ VIP (ĐÁNH CHUNG TIỀN NHỊ & HẬU NHỊ)
    ========================================================================== */
@@ -459,9 +474,54 @@ body {
     padding-bottom: 10px;
 }
 
+.pred-label-cham-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+
+.pred-frame-range-pill {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    color: #34d399;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.pred-frame-range-pill b {
+    color: #fff;
+    font-family: var(--font-heading);
+    letter-spacing: 0.5px;
+}
+
+.unified-range-sub {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.unified-range-sub b {
+    color: #38bdf8 !important;
+}
+
 .unified-conf-badge {
     font-size: 0.82rem;
     color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 .unified-conf-badge b {

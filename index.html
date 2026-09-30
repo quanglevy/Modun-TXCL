@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=3.1">
+    <link rel="stylesheet" href="style.css?v=3.3">
 </head>
 <body>
     <div class="app-container">
@@ -90,7 +90,12 @@
 
                             <!-- BẮT 5 CHẠM VÀNG & GHÉP DÀN 25 SỐ VIP (ĐÁNH CHUNG TIỀN NHỊ & HẬU NHỊ) -->
                             <div class="pred-box pred-box-cham" id="predChamBox">
-                                <div class="pred-label"><i class="fa-solid fa-crown text-gold"></i> BẮT 5 CHẠM VÀNG & GHÉP DÀN 25 SỐ VIP (ĐÁNH CHUNG TIỀN NHỊ & HẬU NHỊ)</div>
+                                <div class="pred-label pred-label-cham-flex">
+                                    <span><i class="fa-solid fa-crown text-gold"></i> BẮT 5 CHẠM VÀNG & GHÉP DÀN 25 SỐ VIP (ĐÁNH CHUNG TIỀN NHỊ & HẬU NHỊ)</span>
+                                    <span class="pred-frame-range-pill" id="predChamRangeBadge">
+                                        <i class="fa-solid fa-crosshairs text-cyan"></i> Nuôi Khung 3 Kỳ: <b class="text-green" id="predChamRangeText">Kỳ 101 ➔ Kỳ 103</b> <small id="predChamTayText" class="text-gold">(Tay 1/3)</small>
+                                    </span>
+                                </div>
 
                                 <div class="phuc-hop-unified-card">
                                     <div class="unified-top-bar">
@@ -102,15 +107,18 @@
                                             <div class="cham-tag-pill"><span class="cham-num">--</span> <span class="cham-prob">0%</span></div>
                                         </div>
                                         <div class="unified-conf-badge">
-                                            Tỷ lệ nổ toàn cục: <b id="predMasterConf">0%</b>
+                                            <span class="unified-range-sub"><i class="fa-solid fa-clock-rotate-left text-cyan"></i> Áp dụng: <b id="predFrameSpanText" class="text-white">Kỳ 101 ➔ Kỳ 103</b></span>
+                                            <span style="margin-left: 6px;">• Tỷ lệ nổ: <b id="predMasterConf">0%</b></span>
                                         </div>
                                     </div>
 
-                                    <!-- 4 CẦU VÀNG BẮT CHẠM CAO THỦ BREAKDOWN -->
+                                    <!-- 6 CẦU VÀNG BẮT CHẠM CAO THỦ BREAKDOWN -->
                                     <div class="golden-rules-breakdown" id="goldenRulesBreakdown">
-                                        <span class="golden-rule-item" title="Hàng trăm & Đơn vị theo Bảng quy đổi 0-9, 1-2, 3-6, 4-8, 5-7"><i class="fa-solid fa-star text-gold"></i> Cặp Chạm Vàng: <b id="goldenPairVal" class="text-cyan">--</b></span>
-                                        <span class="golden-rule-item" title="Đơn vị x2 lấy chính nó hoặc bóng dương"><i class="fa-solid fa-bolt text-gold"></i> Đơn Vị x2: <b id="unitDoubleVal" class="text-yellow">--</b></span>
-                                        <span class="golden-rule-item" title="Đơn vị x2 trừ 1 & cộng 1"><i class="fa-solid fa-arrows-left-right text-gold"></i> Biên (±1): <b id="unitBoundsVal" class="text-green">--</b></span>
+                                        <span class="golden-rule-item" title="Cầu Tổng Đầu (Chục Ngàn + Ngàn d1+d2) chính nó & bóng dương"><i class="fa-solid fa-angles-left text-cyan"></i> Tổng Đầu (d1+d2): <b id="sumDauVal" class="text-cyan">--</b></span>
+                                        <span class="golden-rule-item" title="Cầu Tổng Đuôi (Hàng Chục + Đơn Vị d4+d5) chính nó & bóng dương"><i class="fa-solid fa-angles-right text-purple"></i> Tổng Đuôi (d4+d5): <b id="sumDuoiVal" class="text-purple">--</b></span>
+                                        <span class="golden-rule-item" title="Hàng trăm & Đơn vị theo Bảng quy đổi 0-9, 1-2, 3-6, 4-8, 5-7"><i class="fa-solid fa-star text-gold"></i> Cặp Quy Đổi: <b id="goldenPairVal" class="text-yellow">--</b></span>
+                                        <span class="golden-rule-item" title="Đơn vị x2 lấy chính nó hoặc bóng dương"><i class="fa-solid fa-bolt text-gold"></i> Đơn Vị x2: <b id="unitDoubleVal" class="text-green">--</b></span>
+                                        <span class="golden-rule-item" title="Đơn vị x2 trừ 1 & cộng 1"><i class="fa-solid fa-arrows-left-right text-gold"></i> Biên (±1): <b id="unitBoundsVal" class="text-white">--</b></span>
                                     </div>
 
                                     <div class="phuc-hop-box">
@@ -615,6 +623,6 @@
     </div>
 
     <!-- SOUND EFFECTS (OPTIONAL / WEB AUDIO API) -->
-    <script src="app.js?v=3.1"></script>
+    <script src="app.js?v=3.3"></script>
 </body>
 </html>
