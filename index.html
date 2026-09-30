@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=3.3">
+    <link rel="stylesheet" href="style.css?v=3.7">
 </head>
 <body>
     <div class="app-container">
@@ -254,13 +254,13 @@
                 </div>
             </div>
 
-            <!-- CỘT PHẢI: THỐNG KÊ LỊCH SỬ CÁC KHUNG NUÔI & HIỆU SUẤT ĐỐI SOÁT 10 KỲ -->
+            <!-- CỘT PHẢI: THỐNG KÊ LỊCH SỬ CÁC KHUNG NUÔI 3 KỲ -->
             <div class="dashboard-right-col">
                 <!-- THẺ THỐNG KÊ LỊCH SỬ CÁC KHUNG ĐÃ NUÔI -->
                 <div class="card card-frame-history glow-border">
                     <div class="card-header">
                         <h3><i class="fa-solid fa-timeline text-gold"></i> THỐNG KÊ CÁC KHUNG NUÔI 3 KỲ (ĂN LÀ ĐỔI DÀN)</h3>
-                        <span class="period-count-badge" id="totalFramesBadge">0 Khung</span>
+                        <span class="period-count-badge" id="totalFramesBadge">0 Khung Đã Xong</span>
                     </div>
 
                     <div class="frame-stats-summary-grid">
@@ -289,230 +289,6 @@
                     <!-- DANH SÁCH CHI TIẾT TỪNG KHUNG ĐÃ QUA -->
                     <div class="frame-history-list" id="frameHistoryListContainer">
                         <div class="frame-empty-hint">Chưa có khung nào hoàn thành. Nhập kết quả để xem tiến độ từng khung!</div>
-                    </div>
-                </div>
-
-                <!-- 10-ROUND STATS -->
-                <div class="card card-stats">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-trophy"></i> HIỆU SUẤT ĐỐI SOÁT 10 KỲ GẦN NHẤT</h3>
-                        <span class="period-count-badge" id="totalRoundsBadge">0 Kỳ</span>
-                    </div>
-
-                    <!-- DÒNG 1: THỐNG KÊ TÀI / XỈU -->
-                    <div class="stat-row-block">
-                        <div class="stat-row-header">
-                            <div class="stat-row-title"><i class="fa-solid fa-dice text-red"></i> <b>THỐNG KÊ TÀI / XỈU (10 KỲ)</b></div>
-                            <div class="stat-row-metrics">
-                                <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="txHupCount">0</b></span>
-                                <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="txGayCount">0</b></span>
-                                <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="txWinRate">0%</b></span>
-                            </div>
-                        </div>
-                        <div class="tracker-badges-grid" id="last10BadgesTx">
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                        </div>
-                    </div>
-
-                    <!-- DÒNG 2: THỐNG KÊ CHẴN / LẺ -->
-                    <div class="stat-row-block">
-                        <div class="stat-row-header">
-                            <div class="stat-row-title"><i class="fa-solid fa-scale-balanced text-purple"></i> <b>THỐNG KÊ CHẴN / LẺ (10 KỲ)</b></div>
-                            <div class="stat-row-metrics">
-                                <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="clHupCount">0</b></span>
-                                <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="clGayCount">0</b></span>
-                                <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="clWinRate">0%</b></span>
-                            </div>
-                        </div>
-                        <div class="tracker-badges-grid" id="last10BadgesCl">
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                        </div>
-                    </div>
-
-                    <!-- DÒNG 3: THỐNG KÊ TIỀN NHỊ (25 SỐ ĐẦU) -->
-                    <div class="stat-row-block" style="border-color: rgba(56, 189, 248, 0.3);">
-                        <div class="stat-row-header">
-                            <div class="stat-row-title"><i class="fa-solid fa-angles-left text-cyan"></i> <b>THỐNG KÊ TIỀN NHỊ (2 SỐ ĐẦU - 25 SỐ)</b></div>
-                            <div class="stat-row-metrics">
-                                <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="tienNhiHupCount">0</b></span>
-                                <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="tienNhiGayCount">0</b></span>
-                                <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="tienNhiWinRate">0%</b></span>
-                            </div>
-                        </div>
-                        <div class="tracker-badges-grid" id="last10BadgesTienNhi">
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                        </div>
-                    </div>
-
-                    <!-- DÒNG 4: THỐNG KÊ HẬU NHỊ (25 SỐ ĐUÔI) -->
-                    <div class="stat-row-block" style="border-color: rgba(168, 85, 247, 0.3);">
-                        <div class="stat-row-header">
-                            <div class="stat-row-title"><i class="fa-solid fa-angles-right text-purple"></i> <b>THỐNG KÊ HẬU NHỊ (2 SỐ ĐUÔI - 25 SỐ)</b></div>
-                            <div class="stat-row-metrics">
-                                <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="hauNhiHupCount">0</b></span>
-                                <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="hauNhiGayCount">0</b></span>
-                                <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="hauNhiWinRate">0%</b></span>
-                            </div>
-                        </div>
-                        <div class="tracker-badges-grid" id="last10BadgesHauNhi">
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                            <div class="empty-badge-slot">-</div>
-                        </div>
-                    </div>
-
-                    <!-- DÒNG 5: THỐNG KÊ CHI TIẾT 5 CHẠM VIP THEO THỨ TỰ TỶ LỆ (% CAO ➔ THẤP) -->
-                    <div class="stat-row-block cham-multilevel-block">
-                        <div class="stat-row-header">
-                            <div class="stat-row-title">
-                                <i class="fa-solid fa-crown text-gold"></i> 
-                                <b>THỐNG KÊ 5 TẦNG CHẠM (% CAO ➔ THẤP)</b>
-                            </div>
-                            <div class="stat-row-metrics">
-                                <span class="metric-pill pill-hup" title="Số kỳ dàn 5 chạm nổ ít nhất 1 số"><i class="fa-solid fa-circle-check"></i> Dàn 5C: <b id="chamHupCount">0</b></span>
-                                <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Dàn: <b id="chamWinRate">0%</b></span>
-                            </div>
-                        </div>
-
-                        <!-- TẦNG 1: CHẠM TOP 1 (% TỶ LỆ RA CAO NHẤT) -->
-                        <div class="cham-tier-row">
-                            <div class="cham-tier-label">
-                                <span class="tier-badge tier-gold"><i class="fa-solid fa-crown"></i> TOP 1 (% Cao Nhất)</span>
-                                <span class="tier-stat">Trúng: <b id="cham1HupCount" class="text-green">0</b>/10 (<b id="cham1Rate" class="text-cyan">0%</b>)</span>
-                            </div>
-                            <div class="tracker-badges-grid" id="last10BadgesCham1">
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                            </div>
-                        </div>
-
-                        <!-- TẦNG 2: CHẠM TOP 2 (% TỶ LỆ RA THỨ 2) -->
-                        <div class="cham-tier-row">
-                            <div class="cham-tier-label">
-                                <span class="tier-badge tier-silver"><i class="fa-solid fa-medal"></i> TOP 2 (% Thứ 2)</span>
-                                <span class="tier-stat">Trúng: <b id="cham2HupCount" class="text-green">0</b>/10 (<b id="cham2Rate" class="text-cyan">0%</b>)</span>
-                            </div>
-                            <div class="tracker-badges-grid" id="last10BadgesCham2">
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                            </div>
-                        </div>
-
-                        <!-- TẦNG 3: CHẠM TOP 3 (% TỶ LỆ RA THỨ 3) -->
-                        <div class="cham-tier-row">
-                            <div class="cham-tier-label">
-                                <span class="tier-badge tier-bronze"><i class="fa-solid fa-award"></i> TOP 3 (% Thứ 3)</span>
-                                <span class="tier-stat">Trúng: <b id="cham3HupCount" class="text-green">0</b>/10 (<b id="cham3Rate" class="text-cyan">0%</b>)</span>
-                            </div>
-                            <div class="tracker-badges-grid" id="last10BadgesCham3">
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                            </div>
-                        </div>
-
-                        <!-- TẦNG 4: CHẠM TOP 4 (% TỶ LỆ RA THỨ 4) -->
-                        <div class="cham-tier-row">
-                            <div class="cham-tier-label">
-                                <span class="tier-badge tier-top4"><i class="fa-solid fa-star"></i> TOP 4 (% Thứ 4)</span>
-                                <span class="tier-stat">Trúng: <b id="cham4HupCount" class="text-green">0</b>/10 (<b id="cham4Rate" class="text-cyan">0%</b>)</span>
-                            </div>
-                            <div class="tracker-badges-grid" id="last10BadgesCham4">
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                            </div>
-                        </div>
-
-                        <!-- TẦNG 5: CHẠM TOP 5 (% TỶ LỆ RA THỨ 5) -->
-                        <div class="cham-tier-row">
-                            <div class="cham-tier-label">
-                                <span class="tier-badge tier-top5"><i class="fa-solid fa-shield-halved"></i> TOP 5 (% Thứ 5)</span>
-                                <span class="tier-stat">Trúng: <b id="cham5HupCount" class="text-green">0</b>/10 (<b id="cham5Rate" class="text-cyan">0%</b>)</span>
-                            </div>
-                            <div class="tracker-badges-grid" id="last10BadgesCham5">
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                                <div class="empty-badge-slot">-</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="streak-info">
-                        <span><i class="fa-solid fa-fire text-red"></i> Nhịp TX: <b id="txStreakStatus" class="text-green">--</b></span>
-                        <span><i class="fa-solid fa-bolt text-purple"></i> Nhịp CL: <b id="clStreakStatus" class="text-green">--</b></span>
-                        <span><i class="fa-solid fa-bullseye text-gold"></i> Dàn 5 Chạm: <b id="chamStreakStatus" class="text-green">--</b></span>
                     </div>
                 </div>
             </div>
@@ -623,6 +399,6 @@
     </div>
 
     <!-- SOUND EFFECTS (OPTIONAL / WEB AUDIO API) -->
-    <script src="app.js?v=3.3"></script>
+    <script src="app.js?v=3.7"></script>
 </body>
 </html>

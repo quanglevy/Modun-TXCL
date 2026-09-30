@@ -823,6 +823,7 @@ function generateAIPrediction(history) {
         probHau: chamAnalysis.probHau,
         probMaster: chamAnalysis.probMaster,
         predChamReason: chamAnalysis.reason,
+        extraInsight: extraInsight,
 
         patternName: `${txAnalysis.patternName} & ${clAnalysis.patternName}`,
         reason: `${txAnalysis.reason} Đồng thời, ${clAnalysis.reason} [${extraInsight}] ${chamAnalysis.reason}`
@@ -1083,8 +1084,9 @@ function updatePredictionCard() {
         if (clBarElem) clBarElem.style.width = '0%';
 
         if (chamListMaster) {
-            chamListMaster.innerHTML = topMaster.map(c => `
-                <div class="cham-tag-pill" title="Chạm ${c.digit} (${c.prob}%): ${c.bridgeDetail || ''}">
+            chamListMaster.innerHTML = topMaster.map((c, idx) => `
+                <div class="cham-tag-pill" title="TOP ${idx + 1} - Chạm ${c.digit} (${c.prob}%): ${c.bridgeDetail || ''}">
+                    <span class="cham-rank-badge rank-top${idx + 1}">TOP ${idx + 1}</span>
                     <span class="cham-num">C.${c.digit}</span>
                     <span class="cham-prob">${c.prob}%</span>
                     <span class="cham-bridge-name">${c.bridgeTag || 'Cầu Vàng'}</span>
@@ -1160,8 +1162,9 @@ function updatePredictionCard() {
 
     // Render UNIFIED 5 CHẠM & DÀN 25 SỐ
     if (chamListMaster && topMaster) {
-        chamListMaster.innerHTML = topMaster.map(c => `
-            <div class="cham-tag-pill" title="Chạm ${c.digit} (${c.prob}%): ${c.bridgeDetail || ''}">
+        chamListMaster.innerHTML = topMaster.map((c, idx) => `
+            <div class="cham-tag-pill" title="TOP ${idx + 1} - Chạm ${c.digit} (${c.prob}%): ${c.bridgeDetail || ''}">
+                <span class="cham-rank-badge rank-top${idx + 1}">TOP ${idx + 1}</span>
                 <span class="cham-num">C.${c.digit}</span>
                 <span class="cham-prob">${c.prob}%</span>
                 <span class="cham-bridge-name">${c.bridgeTag || 'Cầu Vàng'}</span>
@@ -1196,9 +1199,49 @@ function updatePredictionCard() {
         unitBoundsElem.innerText = `[${nextPred.unitMinus}, ${nextPred.unitPlus}]`;
     }
 
-    // Render Insight Text
+    // Render Insight Text with Clean Structured Line-by-Line Items
     if (insightTextElem) {
-        insightTextElem.innerHTML = `<strong>Dự báo AI:</strong> ${nextPred.reason}`;
+        if (STATE.rounds.length === 0) {
+            insightTextElem.innerHTML = `<div class="insight-empty-hint"><i class="fa-solid fa-info-circle"></i> Chưa đủ dữ liệu. Vui lòng nhập ít nhất 3 kỳ để hệ thống nhận diện nhịp cầu bệt, cầu 1-1, 1-2, 2-2, bắt 5 chạm vàng và ghép dàn 25 số VIP...</div>`;
+        } else {
+            insightTextElem.innerHTML = `
+                <div class="insight-bullet-list">
+                    <!-- DÒNG 1: CẦU TÀI XỈU -->
+                    <div class="insight-bullet-item item-tx">
+                        <div class="insight-bullet-header">
+                            <span class="insight-badge badge-tx"><i class="fa-solid fa-dice"></i> CẦU TÀI / XỈU</span>
+                            <span class="insight-badge-sub">${nextPred.predTxPattern || 'Cầu Đang Chạy'}</span>
+                        </div>
+                        <div class="insight-bullet-body">
+                            ${nextPred.predTxReason || ''}
+                        </div>
+                    </div>
+
+                    <!-- DÒNG 2: CẦU CHẴN LẺ -->
+                    <div class="insight-bullet-item item-cl">
+                        <div class="insight-bullet-header">
+                            <span class="insight-badge badge-cl"><i class="fa-solid fa-scale-balanced"></i> CẦU CHẴN / LẺ</span>
+                            <span class="insight-badge-sub">${nextPred.predClPattern || 'Nhịp Đồng Bộ'}</span>
+                        </div>
+                        <div class="insight-bullet-body">
+                            ${nextPred.predClReason || ''} 
+                            ${nextPred.extraInsight ? `<span class="insight-highlight-tag">${nextPred.extraInsight}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- DÒNG 3: 6 CẦU VÀNG BẮT 5 CHẠM VIP & DÀN 25 SỐ -->
+                    <div class="insight-bullet-item item-cham">
+                        <div class="insight-bullet-header">
+                            <span class="insight-badge badge-cham"><i class="fa-solid fa-crown"></i> 6 CẦU VÀNG BẮT 5 CHẠM VIP</span>
+                            <span class="insight-badge-sub text-gold">Dàn 25 Số VIP Nuôi Khung 3 Kỳ (${rangeString} ${tayString})</span>
+                        </div>
+                        <div class="insight-bullet-body">
+                            ${nextPred.predChamReason || ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     // Render Tags
@@ -1440,10 +1483,11 @@ function updateFrameUI() {
         }
 
         if (chamPillsElem && active.cham5) {
-            chamPillsElem.innerHTML = active.cham5.map(d => {
+            chamPillsElem.innerHTML = active.cham5.map((d, idx) => {
                 const attr = getBridgeAttribution(d, active.startDigits);
                 return `
-                    <div class="cham-tag-pill" title="Chạm ${d}: ${attr.detail}">
+                    <div class="cham-tag-pill" title="TOP ${idx + 1} - Chạm ${d}: ${attr.detail}">
+                        <span class="cham-rank-badge rank-top${idx + 1}">TOP ${idx + 1}</span>
                         <span class="cham-num">C.${d}</span>
                         <span class="cham-bridge-name">${attr.tag}</span>
                     </div>
@@ -1491,7 +1535,12 @@ function updateFrameUI() {
                     ? `<span class="frame-status-badge status-won"><i class="fa-solid fa-check"></i> HÚP TAY ${f.wonStep} ✓ (${f.winType})</span>`
                     : `<span class="frame-status-badge status-lost"><i class="fa-solid fa-xmark"></i> GÃY KHUNG ✗</span>`;
 
-                const chamPills = f.cham5.map(d => `<span class="cham-tag-pill" style="padding:2px 8px; font-size:0.75rem;"><span class="cham-num">C.${d}</span></span>`).join('');
+                const chamPills = f.cham5.map((d, idx) => `
+                    <span class="cham-tag-pill" style="padding:3px 6px; font-size:0.75rem;">
+                        <span class="cham-rank-badge rank-top${idx + 1}" style="font-size:0.55rem; padding:0 3px; margin-bottom:1px;">T${idx + 1}</span>
+                        <span class="cham-num" style="font-size:0.9rem;">C.${d}</span>
+                    </span>
+                `).join('');
 
                 const stepsHtml = f.steps.map(s => `
                     <div class="frame-step-item ${s.isHit ? 'step-hit' : 'step-miss'}">
