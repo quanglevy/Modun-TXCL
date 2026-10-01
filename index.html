@@ -9,7 +9,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=3.7">
+    <!-- PWA & Mobile Web App Settings -->
+    <meta name="theme-color" content="#0a0e1a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Soi Cầu 5D VIP">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css?v=4.7">
 </head>
 <body>
     <div class="app-container">
@@ -55,6 +64,179 @@
             </div>
         </header>
 
+        <!-- KẾ HOẠCH QUẢN LÝ VỐN 5 KHUNG & HƯỚNG DẪN VÀO TIỀN TỪNG TAY -->
+        <div class="card card-capital-manager glow-border" id="cardCapitalManager">
+            <div class="card-header capital-header">
+                <div class="capital-title-wrap">
+                    <i class="fa-solid fa-sack-dollar text-gold"></i>
+                    <h3>KẾ HOẠCH QUẢN LÝ VỐN & HƯỚNG DẪN VÀO TIỀN TỪNG TAY</h3>
+                    <span class="safe-badge" id="safeBadgeDisplay"><i class="fa-solid fa-shield-halved text-cyan"></i> 5 Khung An Toàn</span>
+                </div>
+                <div class="capital-header-right">
+                    <span class="active-bet-indicator" id="liveBetStepBadge">
+                        <i class="fa-solid fa-crosshairs text-gold"></i> Đang Đánh: <b class="text-green" id="liveBetStepText">TAY 1 / 3 (Khởi Đầu)</b>
+                    </span>
+                </div>
+            </div>
+
+            <div class="capital-body">
+                <!-- DÒNG 1: CẤU HÌNH VỐN & CHIẾN LƯỢC -->
+                <div class="capital-config-row">
+                    <!-- Ô nhập vốn -->
+                    <div class="capital-input-block">
+                        <label for="capitalInput"><i class="fa-solid fa-wallet text-gold"></i> Tổng Vốn Ban Đầu (VNĐ):</label>
+                        <div class="capital-input-wrapper">
+                            <input type="text" id="capitalInput" value="30.000.000" oninput="handleCapitalInputChange(this.value)" placeholder="30.000.000">
+                            <span class="currency-tag">VNĐ</span>
+                        </div>
+                        <div class="quick-capital-buttons">
+                            <button type="button" class="btn-quick-cap" onclick="setQuickCapital(10000000)">10M</button>
+                            <button type="button" class="btn-quick-cap" onclick="setQuickCapital(20000000)">20M</button>
+                            <button type="button" class="btn-quick-cap active" onclick="setQuickCapital(30000000)">30M</button>
+                            <button type="button" class="btn-quick-cap" onclick="setQuickCapital(50000000)">50M</button>
+                            <button type="button" class="btn-quick-cap" onclick="setQuickCapital(100000000)">100M</button>
+                        </div>
+                    </div>
+
+                    <!-- Chọn số khung an toàn -->
+                    <div class="capital-select-block">
+                        <label for="safeFramesSelect"><i class="fa-solid fa-layer-group text-cyan"></i> Số Khung Dự Trữ (Tối thiểu 5 khung):</label>
+                        <select id="safeFramesSelect" onchange="handleSafeFramesChange(this.value)">
+                            <option value="3">3 Khung (Vốn Cao / Đánh Nhanh)</option>
+                            <option value="5" selected>5 Khung (Chuẩn An Toàn Khuyên Dùng)</option>
+                            <option value="7">7 Khung (Siêu An Toàn Bền Vững)</option>
+                            <option value="10">10 Khung (Bất Bại Tuyệt Đối)</option>
+                        </select>
+                        <div class="capital-sub-info">
+                            <span>Ngân sách 1 Khung: <b class="text-gold" id="budgetPerFrameDisplay">6.000.000 đ</b></span>
+                        </div>
+                    </div>
+
+                    <!-- Chọn Cách Đánh -->
+                    <div class="capital-select-block">
+                        <label for="betStrategySelect"><i class="fa-solid fa-bullseye text-purple"></i> Chiến Lược Đánh:</label>
+                        <select id="betStrategySelect" onchange="handleBetStrategyChange(this.value)">
+                            <option value="dual" selected>Cả 2 Đầu (50 Số: 25 Tiền Nhị + 25 Hậu Nhị)</option>
+                            <option value="single">1 Cửa (25 Số VIP - Đánh 1 Đầu)</option>
+                        </select>
+                        <div class="capital-sub-info">
+                            <span>Tỷ lệ ăn thưởng: <b class="text-cyan" id="payoutRateDisplay">1 ăn 99</b></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DÒNG 2: 3 THẺ HƯỚNG DẪN VÀO TIỀN CHO TAY 1, TAY 2, TAY 3 -->
+                <div class="capital-steps-cards-grid">
+                    <!-- TAY 1 -->
+                    <div class="cap-step-card" id="capCardStep1">
+                        <div class="cap-step-header">
+                            <span class="cap-step-title text-cyan"><i class="fa-solid fa-bolt"></i> TAY 1 / 3 (Khởi Đầu)</span>
+                            <span class="cap-step-badge badge-step1">Vốn Thăm Dò</span>
+                        </div>
+                        <div class="cap-step-content">
+                            <div class="cap-money-line">
+                                <span class="cap-money-label">Tiền cược mỗi con:</span>
+                                <span class="cap-money-val text-cyan" id="capStep1PerNum">20.000 đ</span>
+                            </div>
+                            <div class="cap-money-line" id="capStep1HeadRow">
+                                <span class="cap-money-label">Mỗi đầu (25 số):</span>
+                                <span class="cap-money-val text-yellow" id="capStep1HeadVal">500.000 đ</span>
+                            </div>
+                            <div class="cap-money-line">
+                                <span class="cap-money-label">Tổng cược kỳ này:</span>
+                                <span class="cap-money-val text-white" id="capStep1Total">1.000.000 đ</span>
+                            </div>
+                            <div class="cap-money-line line-profit">
+                                <span class="cap-money-label">Húp 1 đầu lãi:</span>
+                                <span class="cap-money-val text-green" id="capStep1Profit">+980.000 đ</span>
+                            </div>
+                            <div class="cap-money-line line-profit-both" id="capStep1BothRow">
+                                <span class="cap-money-label">Húp cả 2 đầu lãi:</span>
+                                <span class="cap-money-val text-gold" id="capStep1ProfitBoth">+2.960.000 đ</span>
+                            </div>
+                        </div>
+                        <div class="cap-step-footer">
+                            <span class="cap-action-hint"><i class="fa-solid fa-circle-check text-green"></i> Ăn là dừng khung ➔ Mở Khung Mới</span>
+                        </div>
+                    </div>
+
+                    <!-- TAY 2 -->
+                    <div class="cap-step-card" id="capCardStep2">
+                        <div class="cap-step-header">
+                            <span class="cap-step-title text-yellow"><i class="fa-solid fa-fire"></i> TAY 2 / 3 (Gấp Thếp)</span>
+                            <span class="cap-step-badge badge-step2">Tăng Tốc</span>
+                        </div>
+                        <div class="cap-step-content">
+                            <div class="cap-money-line">
+                                <span class="cap-money-label">Tiền cược mỗi con:</span>
+                                <span class="cap-money-val text-yellow" id="capStep2PerNum">35.000 đ</span>
+                            </div>
+                            <div class="cap-money-line" id="capStep2HeadRow">
+                                <span class="cap-money-label">Mỗi đầu (25 số):</span>
+                                <span class="cap-money-val text-yellow" id="capStep2HeadVal">875.000 đ</span>
+                            </div>
+                            <div class="cap-money-line">
+                                <span class="cap-money-label">Tổng cược kỳ này:</span>
+                                <span class="cap-money-val text-white" id="capStep2Total">1.750.000 đ</span>
+                            </div>
+                            <div class="cap-money-line line-profit">
+                                <span class="cap-money-label">Húp 1 đầu lãi:</span>
+                                <span class="cap-money-val text-green" id="capStep2Profit">+715.000 đ</span>
+                            </div>
+                            <div class="cap-money-line line-profit-both" id="capStep2BothRow">
+                                <span class="cap-money-label">Húp cả 2 đầu lãi:</span>
+                                <span class="cap-money-val text-gold" id="capStep2ProfitBoth">+4.180.000 đ</span>
+                            </div>
+                        </div>
+                        <div class="cap-step-footer">
+                            <span class="cap-action-hint"><i class="fa-solid fa-arrow-rotate-right text-cyan"></i> Bù vốn Tay 1 + Thu lãi đậm</span>
+                        </div>
+                    </div>
+
+                    <!-- TAY 3 -->
+                    <div class="cap-step-card" id="capCardStep3">
+                        <div class="cap-step-header">
+                            <span class="cap-step-title text-purple"><i class="fa-solid fa-burst"></i> TAY 3 / 3 (Quyết Đấu)</span>
+                            <span class="cap-step-badge badge-step3">Chốt Khung</span>
+                        </div>
+                        <div class="cap-step-content">
+                            <div class="cap-money-line">
+                                <span class="cap-money-label">Tiền cược mỗi con:</span>
+                                <span class="cap-money-val text-purple" id="capStep3PerNum">65.000 đ</span>
+                            </div>
+                            <div class="cap-money-line" id="capStep3HeadRow">
+                                <span class="cap-money-label">Mỗi đầu (25 số):</span>
+                                <span class="cap-money-val text-yellow" id="capStep3HeadVal">1.625.000 đ</span>
+                            </div>
+                            <div class="cap-money-line">
+                                <span class="cap-money-label">Tổng cược kỳ này:</span>
+                                <span class="cap-money-val text-white" id="capStep3Total">3.250.000 đ</span>
+                            </div>
+                            <div class="cap-money-line line-profit">
+                                <span class="cap-money-label">Húp 1 đầu lãi:</span>
+                                <span class="cap-money-val text-green" id="capStep3Profit">+435.000 đ</span>
+                            </div>
+                            <div class="cap-money-line line-profit-both" id="capStep3BothRow">
+                                <span class="cap-money-label">Húp cả 2 đầu lãi:</span>
+                                <span class="cap-money-val text-gold" id="capStep3ProfitBoth">+6.870.000 đ</span>
+                            </div>
+                        </div>
+                        <div class="cap-step-footer">
+                            <span class="cap-action-hint"><i class="fa-solid fa-trophy text-gold"></i> Bù 2 tay trước + Thu lãi khủng</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DÒNG 3: THANH NHẮC NHỞ TRỰC TIẾP TỪ AI -->
+                <div class="capital-live-prompt" id="capLivePrompt">
+                    <i class="fa-solid fa-lightbulb text-gold fa-beat"></i>
+                    <span id="capLivePromptText">
+                        💡 <b>HƯỚNG DẪN VÀO TIỀN KỲ TIẾP THEO:</b> Bạn đang ở <b>TAY 1 / 3</b> ➔ Đặt <b>20.000 đ / số</b> (Tiền Nhị: <b>500.000 đ</b>, Hậu Nhị: <b>500.000 đ</b> ➔ Tổng cược: <b>1.000.000 đ</b>). Húp 1 đầu lãi <b>+980.000 đ</b>!
+                    </span>
+                </div>
+            </div>
+        </div>
+
         <!-- TOP DASHBOARD: LIVE PREDICTION & 10-ROUND SUMMARY -->
         <div class="grid-top-dashboard">
             <!-- CỘT TRÁI: DỰ ĐOÁN TIẾP THEO & Ô NHẬP KẾT QUẢ (ĐẶT LIỀN KỀ NHAU) -->
@@ -76,6 +258,26 @@
                                     <div class="conf-bar-text">Độ tin cậy: <span id="predTxConf">0%</span></div>
                                     <div class="progress-bar"><div class="progress-fill" id="predTxBar" style="width: 0%;"></div></div>
                                 </div>
+
+                                <!-- MINI 10-KỲ TRACKER CHO TÀI XỈU -->
+                                <div class="pred-10round-mini" id="predTxMini10">
+                                    <div class="mini-10-header">
+                                        <span><i class="fa-solid fa-chart-line text-cyan"></i> 10 Kỳ: <b id="txMiniHupRatio" class="text-green">0/0 Húp</b></span>
+                                        <span class="mini-10-rate text-cyan" id="txMiniWinRate">0%</span>
+                                    </div>
+                                    <div class="mini-10-dots" id="txMiniDots">
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- CHẴN / LẺ PREDICTION -->
@@ -86,15 +288,43 @@
                                     <div class="conf-bar-text">Độ tin cậy: <span id="predClConf">0%</span></div>
                                     <div class="progress-bar"><div class="progress-fill" id="predClBar" style="width: 0%;"></div></div>
                                 </div>
+
+                                <!-- MINI 10-KỲ TRACKER CHO CHẴN LẺ -->
+                                <div class="pred-10round-mini" id="predClMini10">
+                                    <div class="mini-10-header">
+                                        <span><i class="fa-solid fa-chart-line text-purple"></i> 10 Kỳ: <b id="clMiniHupRatio" class="text-green">0/0 Húp</b></span>
+                                        <span class="mini-10-rate text-purple" id="clMiniWinRate">0%</span>
+                                    </div>
+                                    <div class="mini-10-dots" id="clMiniDots">
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                        <div class="mini-dot dot-empty">-</div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- BẮT 5 CHẠM VÀNG & GHÉP DÀN 25 SỐ VIP (ĐÁNH CHUNG TIỀN NHỊ & HẬU NHỊ) -->
                             <div class="pred-box pred-box-cham" id="predChamBox">
                                 <div class="pred-label pred-label-cham-flex">
                                     <span><i class="fa-solid fa-crown text-gold"></i> BẮT 5 CHẠM VÀNG & GHÉP DÀN 25 SỐ VIP (ĐÁNH CHUNG TIỀN NHỊ & HẬU NHỊ)</span>
-                                    <span class="pred-frame-range-pill" id="predChamRangeBadge">
-                                        <i class="fa-solid fa-crosshairs text-cyan"></i> Nuôi Khung 3 Kỳ: <b class="text-green" id="predChamRangeText">Kỳ 101 ➔ Kỳ 103</b> <small id="predChamTayText" class="text-gold">(Tay 1/3)</small>
-                                    </span>
+                                    <div class="cham-label-badges-row">
+                                        <span class="pred-frame-range-pill" id="predChamRangeBadge">
+                                            <i class="fa-solid fa-crosshairs text-cyan"></i> Nuôi Khung 3 Kỳ: <b class="text-green" id="predChamRangeText">Kỳ 101 ➔ Kỳ 103</b> <small id="predChamTayText" class="text-gold">(Tay 1/3)</small>
+                                        </span>
+                                        <span class="pred-bet-pill" id="predChamBetPill">
+                                            <i class="fa-solid fa-coins text-gold"></i> Vào Vốn: <b class="text-green" id="predChamBetText">20k/số (500k)</b>
+                                        </span>
+                                        <span class="pred-signal-pill signal-green" id="predChamSignalPill">
+                                            <i class="fa-solid fa-traffic-light"></i> Tín Hiệu: <b id="predChamSignalText">NÊN VÀO TIỀN</b>
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div class="phuc-hop-unified-card">
@@ -167,8 +397,23 @@
 
                     <div class="active-frame-body">
                         <div class="frame-meta-row">
-                            <span><i class="fa-solid fa-flag-checkered text-cyan"></i> Mốc Khởi Tạo: <b id="activeFrameOrigin" class="text-white">Chưa có</b></span>
-                            <span><i class="fa-solid fa-coins text-gold"></i> Vào Vốn Khuyến Nghị: <b id="activeFrameBetAdvice" class="text-green">Vốn x1 (Thăm Dò)</b></span>
+                            <span><i class="fa-solid fa-flag-checkered text-cyan"></i> Mốc Gốc: <b id="activeFrameOrigin" class="text-white">Chưa có</b></span>
+                            <span><i class="fa-solid fa-coins text-gold"></i> Vào Vốn: <b id="activeFrameBetAdvice" class="text-green">TAY 1: Đánh 20K/số (Tổng: 1.000.000đ)</b></span>
+                        </div>
+
+                        <!-- KHỐI ĐÁNH GIÁ ĐỘ MẠNH CẦU & KIẾN NGHỊ VÀO VỐN AI -->
+                        <div class="frame-signal-box" id="frameSignalBox">
+                            <div class="signal-badge-wrap">
+                                <span class="signal-traffic-badge signal-green" id="activeFrameSignalBadge">
+                                    <i class="fa-solid fa-circle-check"></i> ĐÈN XANH: CẦU CHUẨN ĐẸP ➔ NÊN VÀO TIỀN
+                                </span>
+                                <span class="signal-score-badge" id="activeFrameSignalScore">
+                                    <i class="fa-solid fa-gauge-high text-cyan"></i> Độ Chuẩn Cầu: <b id="signalScoreVal">88%</b>
+                                </span>
+                            </div>
+                            <div class="signal-advice-text" id="activeFrameSignalAdvice">
+                                6 Cầu Vàng đang trả số cực chuẩn (5/6 cầu nổ thông). Tỷ lệ ăn khung cao. Khuyến nghị TỰ TIN VÀO TIỀN theo đúng kế hoạch vốn!
+                            </div>
                         </div>
 
                         <div class="frame-cham-row">
@@ -286,9 +531,119 @@
                         </div>
                     </div>
 
+                    <!-- KHỐI THỐNG KÊ TIỀN NHỊ VS HẬU NHỊ & THIÊN HƯỚNG CẦU -->
+                    <div class="frame-nhi-analysis-box">
+                        <div class="nhi-box-header">
+                            <span class="nhi-box-title">
+                                <i class="fa-solid fa-arrows-split-up-and-left text-gold"></i>
+                                <b>ĐỐI SOÁT TỶ LỆ ĂN TIỀN NHỊ (2 ĐẦU) VS HẬU NHỊ (2 ĐUÔI):</b>
+                            </span>
+                            <span class="bias-badge bias-equal" id="fStatBiasBadge">
+                                <i class="fa-solid fa-scale-balanced"></i> CÂN BẰNG 2 ĐẦU
+                            </span>
+                        </div>
+
+                        <div class="nhi-stats-cards-grid">
+                            <div class="nhi-stat-mini-card card-tien">
+                                <div class="nhi-card-label"><i class="fa-solid fa-angles-left text-cyan"></i> Ăn Tiền Nhị (2 Đầu)</div>
+                                <div class="nhi-card-val text-cyan" id="fStatTienRate">0%</div>
+                                <div class="nhi-card-sub" id="fStatTienKhung">0 Khung</div>
+                            </div>
+                            <div class="nhi-stat-mini-card card-hau">
+                                <div class="nhi-card-label"><i class="fa-solid fa-angles-right text-purple"></i> Ăn Hậu Nhị (2 Đuôi)</div>
+                                <div class="nhi-card-val text-purple" id="fStatHauRate">0%</div>
+                                <div class="nhi-card-sub" id="fStatHauKhung">0 Khung</div>
+                            </div>
+                            <div class="nhi-stat-mini-card card-both">
+                                <div class="nhi-card-label"><i class="fa-solid fa-crown text-gold"></i> Trúng Cả 2 Đầu</div>
+                                <div class="nhi-card-val text-gold" id="fStatBothRate">0%</div>
+                                <div class="nhi-card-sub" id="fStatBothKhung">0 Khung</div>
+                            </div>
+                        </div>
+
+                        <!-- Thanh so sánh tỷ lệ Tiền vs Hậu -->
+                        <div class="nhi-comparison-bar-wrap">
+                            <div class="nhi-bar-labels">
+                                <span class="text-cyan"><i class="fa-solid fa-angles-left"></i> Tiền Nhị (d1 d2)</span>
+                                <span class="text-purple">Hậu Nhị (d4 d5) <i class="fa-solid fa-angles-right"></i></span>
+                            </div>
+                            <div class="nhi-dual-progress-bar">
+                                <div class="bar-tien" id="fStatRatioBarTien" style="width: 50%;">Tiền 50%</div>
+                                <div class="bar-hau" id="fStatRatioBarHau" style="width: 50%;">Hậu 50%</div>
+                            </div>
+                        </div>
+
+                        <!-- Nhận định xu hướng & lời khuyên -->
+                        <div class="nhi-advice-bar">
+                            <i class="fa-solid fa-lightbulb text-yellow"></i>
+                            <span id="fStatBiasAdvice">Dàn 25 số nuôi khung 3 kỳ đang được AI theo dõi tỷ lệ nổ Tiền Nhị vs Hậu Nhị...</span>
+                        </div>
+                    </div>
+
                     <!-- DANH SÁCH CHI TIẾT TỪNG KHUNG ĐÃ QUA -->
                     <div class="frame-history-list" id="frameHistoryListContainer">
                         <div class="frame-empty-hint">Chưa có khung nào hoàn thành. Nhập kết quả để xem tiến độ từng khung!</div>
+                    </div>
+                </div>
+
+                <!-- THẺ HIỆU SUẤT ĐỐI SOÁT 10 KỲ (TÀI XỈU & CHẴN LẺ) -->
+                <div class="card card-stats glow-border">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-chart-pie text-cyan"></i> HIỆU SUẤT ĐỐI SOÁT 10 KỲ (TÀI XỈU & CHẴN LẺ)</h3>
+                        <span class="period-count-badge" id="totalRoundsBadge">0 Kỳ</span>
+                    </div>
+
+                    <!-- DÒNG 1: THỐNG KÊ TÀI / XỈU -->
+                    <div class="stat-row-block">
+                        <div class="stat-row-header">
+                            <div class="stat-row-title"><i class="fa-solid fa-dice text-red"></i> <b>THỐNG KÊ TÀI / XỈU (10 KỲ)</b></div>
+                            <div class="stat-row-metrics">
+                                <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="txHupCount">0</b></span>
+                                <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="txGayCount">0</b></span>
+                                <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="txWinRate">0%</b></span>
+                            </div>
+                        </div>
+                        <div class="tracker-badges-grid" id="last10BadgesTx">
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                        </div>
+                    </div>
+
+                    <!-- DÒNG 2: THỐNG KÊ CHẴN / LẺ -->
+                    <div class="stat-row-block">
+                        <div class="stat-row-header">
+                            <div class="stat-row-title"><i class="fa-solid fa-scale-balanced text-purple"></i> <b>THỐNG KÊ CHẴN / LẺ (10 KỲ)</b></div>
+                            <div class="stat-row-metrics">
+                                <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="clHupCount">0</b></span>
+                                <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="clGayCount">0</b></span>
+                                <span class="metric-pill pill-rate"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="clWinRate">0%</b></span>
+                            </div>
+                        </div>
+                        <div class="tracker-badges-grid" id="last10BadgesCl">
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                        </div>
+                    </div>
+
+                    <div class="streak-info">
+                        <span><i class="fa-solid fa-fire text-red"></i> Nhịp TX: <b id="txStreakStatus" class="text-green">--</b></span>
+                        <span><i class="fa-solid fa-bolt text-purple"></i> Nhịp CL: <b id="clStreakStatus" class="text-green">--</b></span>
                     </div>
                 </div>
             </div>
@@ -399,6 +754,6 @@
     </div>
 
     <!-- SOUND EFFECTS (OPTIONAL / WEB AUDIO API) -->
-    <script src="app.js?v=3.7"></script>
+    <script src="app.js?v=4.7"></script>
 </body>
 </html>

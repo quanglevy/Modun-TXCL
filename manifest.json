@@ -1,0 +1,19 @@
+{
+  "name": "AI Soi Cầu 5 Số VIP - Tài Xỉu Chẵn Lẻ",
+  "short_name": "Soi Cầu 5D VIP",
+  "description": "Module AI Dự Đoán Tài Xỉu - Chẵn Lẻ 5 Số, Bắt 5 Chạm Vàng & Ghép Dàn 25 Số Nuôi Khung 3 Kỳ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0e1a",
+  "theme_color": "#0a0e1a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512 192x192 128x128 64x64",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

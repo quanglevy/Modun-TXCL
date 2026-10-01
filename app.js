@@ -15,7 +15,11 @@ const STATE = {
     calcMode: 'sum5', // 'sum5', 'last2', 'last3', 'unitDigit'
     roadmapTab: 'tx', // 'tx' or 'cl'
     tableFilter: '10', // '10' or 'all'
-    phucHopTab: 'tien' // 'tien', 'hau', 'master'
+    phucHopTab: 'tien', // 'tien', 'hau', 'master'
+    capital: 30000000, // Total Capital in VNĐ
+    safeFrames: 5, // Number of safe frames (default 5)
+    betStrategy: 'dual', // 'dual' (Cả 2 đầu: Tiền Nhị & Hậu Nhị) or 'single' (1 cửa)
+    payoutRate: 99 // Payout rate: 1 ăn 99
 };
 
 const STORAGE_KEY = 'AI_TX_CL_5DIGIT_DATA_V1';
@@ -740,9 +744,198 @@ function analyzeTop5Cham(history) {
 }
 
 /**
+ * ==========================================================================
+ * BRIDGE HEALTH & ACTION SIGNAL ENGINE (ĐÁNH GIÁ ĐỘ CHUẨN CẦU & KIẾN NGHỊ VÀO VỐN)
+ * - Đánh giá độ nổ thông của 6 Cầu Vàng trong 3-5 kỳ gần nhất
+ * - Nhận diện chuỗi gãy khung / bão cầu (Lost Streak & Risk Momentum)
+ * - Trả về 3 cấp tín hiệu: Đèn Xanh (Nên vào tiền), Đèn Vàng (Thăm dò nhẹ), Đèn Đỏ (Tạm nghỉ bảo toàn vốn)
+ * ==========================================================================
+ */
+function evaluateBridgeHealth(history = STATE.rounds, frameData = null) {
+    if (!frameData) {
+        frameData = computeFrameHistory(history);
+    }
+
+    if (!history || history.length < 3) {
+        return {
+            score: 75,
+            scoreText: '75%',
+            level: 'green',
+            badgeClass: 'signal-green',
+            icon: '<i class="fa-solid fa-circle-check"></i>',
+            title: 'ĐÈN XANH: CẦU KHỞI TẠO ➔ VÀO TIỀN THĂM DÒ',
+            shortSignal: 'NÊN VÀO TIỀN',
+            activeBridgesCount: 4,
+            recentLostStreak: 0,
+            lostInLast3: 0,
+            advice: 'Dữ liệu đang khởi tạo. Hệ thống bắt đầu quét nhịp 6 Cầu Vàng. Khuyến nghị vào vốn thăm dò Tay 1 (20k/số).',
+            bridgesStatus: {}
+        };
+    }
+
+    const n = history.length;
+    const frames = frameData.frames || [];
+    const stats = frameData.stats || {};
+
+    // 1. KIỂM TRA ĐỘ NỔ THÔNG CỦA 6 CẦU VÀNG TRONG 3-5 KỲ GẦN NHẤT
+    const checkRoundsCount = Math.min(5, n - 1);
+    let bridge1Hit = 0; // Cầu 1: Đơn vị x2 (Chính & Bóng)
+    let bridge2Hit = 0; // Cầu 2: Cặp quy đổi Trăm & Đơn vị
+    let bridge3Hit = 0; // Cầu 3: Biên ±1
+    let bridge4Hit = 0; // Cầu 4: Tổng Đầu (d1+d2)
+    let bridge5Hit = 0; // Cầu 5: Tổng Đuôi (d4+d5)
+    let bridgePascalHit = 0; // Pascal Peak
+
+    for (let i = n - 1 - checkRoundsCount; i < n - 1; i++) {
+        if (i < 0) continue;
+        const prevR = history[i];
+        const nextR = history[i + 1];
+        const nextDigits = nextR.digits.map(Number);
+
+        // Cầu 1: Đơn vị x2
+        const prevD5 = prevR.digits[4];
+        const u = (prevD5 * 2) % 10;
+        const u_bong = (u + 5) % 10;
+        if (nextDigits.includes(u) || nextDigits.includes(u_bong)) bridge1Hit++;
+
+        // Cầu 2: Cặp quy đổi Trăm & Đơn vị
+        const r_tram = MAP_EXCHANGE[prevR.digits[2]] !== undefined ? MAP_EXCHANGE[prevR.digits[2]] : (prevR.digits[2] + 5) % 10;
+        const r_dv = MAP_EXCHANGE[prevR.digits[4]] !== undefined ? MAP_EXCHANGE[prevR.digits[4]] : (prevR.digits[4] + 5) % 10;
+        if (nextDigits.includes(r_tram) || nextDigits.includes(r_dv)) bridge2Hit++;
+
+        // Cầu 3: Biên ±1
+        const u_minus = (u - 1 + 10) % 10;
+        const u_plus = (u + 1) % 10;
+        if (nextDigits.includes(u_minus) || nextDigits.includes(u_plus)) bridge3Hit++;
+
+        // Cầu 4: Tổng Đầu
+        const sumDau = (prevR.digits[0] + prevR.digits[1]) % 10;
+        const sumDauBong = (sumDau + 5) % 10;
+        if (nextDigits.includes(sumDau) || nextDigits.includes(sumDauBong)) bridge4Hit++;
+
+        // Cầu 5: Tổng Đuôi
+        const sumDuoi = (prevR.digits[3] + prevR.digits[4]) % 10;
+        const sumDuoiBong = (sumDuoi + 5) % 10;
+        if (nextDigits.includes(sumDuoi) || nextDigits.includes(sumDuoiBong)) bridge5Hit++;
+
+        // Pascal
+        const pasc = calculatePascalPeak(prevR.digits);
+        if (nextDigits.includes(pasc[0]) || nextDigits.includes(pasc[1])) bridgePascalHit++;
+    }
+
+    const minPassHits = Math.max(1, Math.floor(checkRoundsCount * 0.4));
+    let activeBridgesCount = 0;
+    if (bridge1Hit >= minPassHits) activeBridgesCount++;
+    if (bridge2Hit >= minPassHits) activeBridgesCount++;
+    if (bridge3Hit >= minPassHits) activeBridgesCount++;
+    if (bridge4Hit >= minPassHits) activeBridgesCount++;
+    if (bridge5Hit >= minPassHits) activeBridgesCount++;
+    if (bridgePascalHit >= minPassHits) activeBridgesCount++;
+
+    // 2. KIỂM TRA CHUỖI GÃY KHUNG GẦN NHẤT (MOMENTUM & RISK DETECTION)
+    let recentLostStreak = 0;
+    for (let k = frames.length - 1; k >= 0; k--) {
+        if (frames[k].status === 'lost') {
+            recentLostStreak++;
+        } else {
+            break;
+        }
+    }
+
+    const last3Frames = frames.slice(-3);
+    const lostInLast3 = last3Frames.filter(f => f.status === 'lost').length;
+
+    // 3. TÍNH TOÁN ĐIỂM SỨC MẠNH CẦU (0 - 100)
+    let score = 50;
+    // Điểm từ 6 Cầu Vàng (0 - 36 điểm)
+    score += (activeBridgesCount / 6) * 35;
+
+    // Điểm từ Tỷ lệ ăn khung tổng quan & gần đây (0 - 25 điểm)
+    if (frames.length > 0) {
+        const winRate = stats.winRate || 0;
+        score += (winRate / 100) * 15;
+        if (last3Frames.length >= 2) {
+            const recentWinRate = ((last3Frames.length - lostInLast3) / last3Frames.length) * 10;
+            score += recentWinRate;
+        }
+    } else {
+        score += 15;
+    }
+
+    // Phạt điểm khi có chuỗi gãy khung
+    if (recentLostStreak >= 2) {
+        score -= 35; // Gãy 2 khung liên tiếp -> Giảm mạnh
+    } else if (recentLostStreak === 1) {
+        score -= 15;
+    }
+
+    if (lostInLast3 >= 2) {
+        score -= 20; // 3 khung gần nhất gãy 2 khung
+    }
+
+    score = Math.max(10, Math.min(99, Math.round(score)));
+
+    // 4. PHÂN ĐỊNH 3 CẤP TÍN HIỆU
+    let level = 'green';
+    let badgeClass = 'signal-green';
+    let icon = '<i class="fa-solid fa-circle-check"></i>';
+    let title = 'ĐÈN XANH: CẦU CHUẨN ĐẸP ➔ NÊN VÀO TIỀN';
+    let shortSignal = 'NÊN VÀO TIỀN (CẦU CHUẨN)';
+    let advice = '';
+
+    if (recentLostStreak >= 2 || (lostInLast3 >= 2 && activeBridgesCount <= 3) || score < 50) {
+        level = 'red';
+        badgeClass = 'signal-red';
+        icon = '<i class="fa-solid fa-hand-dots"></i>';
+        title = 'ĐÈN ĐỎ: CẢNH BÁO BÃO CẦU ➔ TẠM NGHỈ CHỜ NHỊP';
+        shortSignal = 'NÊN TẠM NGHỈ (BẢO TOÀN VỐN)';
+        advice = `🛑 CẢNH BÁO BÃO CẦU: Phát hiện nhịp cầu đang bị gãy (${recentLostStreak > 0 ? `${recentLostStreak} khung gãy liên tiếp` : `${lostInLast3}/3 khung gần nhất gãy`}), các Cầu Vàng đang bị bẻ hướng (${activeBridgesCount}/6 cầu trả chuẩn). KIẾN NGHỊ: TẠM DỪNG VÀO TIỀN KHUNG NÀY (ĐỨNG NGOÀI QUAN SÁT) để bảo toàn 100% số vốn 30M, chờ 1 khung nổ thông lại mới tiếp tục vào tiền!`;
+    } else if (score < 72 || recentLostStreak === 1 || activeBridgesCount <= 3) {
+        level = 'yellow';
+        badgeClass = 'signal-yellow';
+        icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        title = 'ĐÈN VÀNG: CẦU TRUNG BÌNH ➔ VÀO TIỀN THĂM DÒ';
+        shortSignal = 'VÀO TIỀN NHẸ (THĂM DÒ)';
+        advice = `⚠️ CẦU Ở MỨC TRUNG BÌNH: Độ chuẩn ${score}%, có ${activeBridgesCount}/6 Cầu Vàng nổ thông. KIẾN NGHỊ: ĐI TIỀN NHẸ THĂM DÒ (Hạ 50% mức cược) hoặc chỉ ưu tiên đánh 1 đầu Hậu Nhị để kiểm soát an toàn rủi ro!`;
+    } else {
+        level = 'green';
+        badgeClass = 'signal-green';
+        icon = '<i class="fa-solid fa-circle-check"></i>';
+        title = 'ĐÈN XANH: CẦU CHUẨN ĐẸP ➔ NÊN VÀO TIỀN';
+        shortSignal = 'NÊN VÀO TIỀN (CẦU CHUẨN)';
+        advice = `🟢 CẦU ĐANG TRẢ SỐ CỰC CHUẨN: Độ hội tụ ${score}%, có ${activeBridgesCount}/6 Cầu Vàng nổ thông đồng bộ. Tỷ lệ ăn khung cao (${stats.winRate || 85}%). KIẾN NGHỊ: TỰ TIN VÀO VỐN ĐẦY ĐỦ theo đúng tỷ lệ Tay 1 ➔ Tay 3 (20k - 35k - 65k) cho cả Tiền & Hậu!`;
+    }
+
+    return {
+        score,
+        scoreText: `${score}%`,
+        level,
+        badgeClass,
+        icon,
+        title,
+        shortSignal,
+        activeBridgesCount,
+        recentLostStreak,
+        lostInLast3,
+        advice,
+        bridgesStatus: {
+            unitDouble: { name: 'Đơn Vị x2', hit: bridge1Hit >= minPassHits },
+            goldenPair: { name: 'Cặp Quy Đổi', hit: bridge2Hit >= minPassHits },
+            unitBounds: { name: 'Biên ±1', hit: bridge3Hit >= minPassHits },
+            sumDau: { name: 'Tổng Đầu', hit: bridge4Hit >= minPassHits },
+            sumDuoi: { name: 'Tổng Đuôi', hit: bridge5Hit >= minPassHits },
+            pascal: { name: 'Pascal', hit: bridgePascalHit >= minPassHits }
+        }
+    };
+}
+
+/**
  * Generate Next AI Prediction
  */
 function generateAIPrediction(history) {
+    const frameData = computeFrameHistory(history);
+    const bridgeHealth = evaluateBridgeHealth(history, frameData);
+
     if (!history || history.length === 0) {
         const chamAnalysis = analyzeTop5Cham([]);
         return {
@@ -770,6 +963,7 @@ function generateAIPrediction(history) {
             probTien: 92,
             probHau: 92,
             probMaster: 96,
+            bridgeHealth: bridgeHealth,
             patternName: 'Khởi đầu',
             reason: 'Chưa có lịch sử kỳ quay. Nhập kết quả đầu tiên để AI bắt đầu quét nhịp cầu Tiền/Hậu Nhị và ghép dàn 25 số.'
         };
@@ -823,6 +1017,7 @@ function generateAIPrediction(history) {
         probHau: chamAnalysis.probHau,
         probMaster: chamAnalysis.probMaster,
         predChamReason: chamAnalysis.reason,
+        bridgeHealth: bridgeHealth,
         extraInsight: extraInsight,
 
         patternName: `${txAnalysis.patternName} & ${clAnalysis.patternName}`,
@@ -909,6 +1104,8 @@ function handleFormSubmit(event) {
 
 /**
  * Add a new round into history, verify with previous prediction, compute Húp/Gãy
+ * - 5 kỳ đầu tiên (Kỳ 1 -> Kỳ 5) là mốc gốc ban đầu để thiết lập cầu kèo (không vào tiền, không tính trúng/trượt)
+ * - Khung #1 và đối soát chính thức bắt đầu từ kỳ thứ 6 trở đi!
  */
 function addNewRound(period, digits) {
     // Current AI prediction before this round came in
@@ -917,19 +1114,22 @@ function addNewRound(period, digits) {
     // Evaluate actual result
     const evalRes = evaluateDigits(digits, STATE.calcMode);
 
+    const isWarmup = STATE.rounds.length < 5;
+    const warmupNum = STATE.rounds.length + 1;
+
     // Verify Prediction
     const isTxHup = currentPred.predTx ? (currentPred.predTx === evalRes.tx) : true;
     const isClHup = currentPred.predCl ? (currentPred.predCl === evalRes.cl) : true;
-    const statusTx = isTxHup ? 'Húp' : 'Gãy';
-    const statusCl = isClHup ? 'Húp' : 'Gãy';
-    const statusOverall = (isTxHup && isClHup) ? 'Húp' : (isTxHup ? 'Húp (TX)' : (isClHup ? 'Húp (CL)' : 'Gãy'));
+    const statusTx = isWarmup ? 'Mốc Gốc' : (isTxHup ? 'Húp' : 'Gãy');
+    const statusCl = isWarmup ? 'Mốc Gốc' : (isClHup ? 'Húp' : 'Gãy');
+    const statusOverall = isWarmup ? 'Mốc Gốc' : ((isTxHup && isClHup) ? 'Húp' : (isTxHup ? 'Húp (TX)' : (isClHup ? 'Húp (CL)' : 'Gãy')));
 
     // Master 5 Cham & Dàn 25 Số VIP
     const predChamArr = currentPred.masterDigits || currentPred.predCham || [9, 4, 2, 7, 0];
     const hitCham = predChamArr.filter(c => digits.includes(c));
     const isChamHit = hitCham.length > 0;
-    const statusCham = isChamHit ? 'Trúng' : 'Trượt';
-    const statusChamDetail = isChamHit ? `Trúng [${hitCham.join(', ')}]` : 'Trượt';
+    const statusCham = isWarmup ? 'Mốc Gốc' : (isChamHit ? 'Trúng' : 'Trượt');
+    const statusChamDetail = isWarmup ? 'Mốc Gốc' : (isChamHit ? `Trúng [${hitCham.join(', ')}]` : 'Trượt');
 
     // Đánh chung Dàn 25 số cho Tiền Nhị (d1 d2) & Hậu Nhị (d4 d5)
     const tienNhiVal = `${digits[0]}${digits[1]}`;
@@ -938,8 +1138,10 @@ function addNewRound(period, digits) {
     const isHauNhiHit = predChamArr.includes(digits[3]) && predChamArr.includes(digits[4]);
     const isUnified25Hit = isTienNhiHit || isHauNhiHit;
 
-    // Sound effect
-    playNotificationSound(isTxHup || isClHup || isChamHit || isUnified25Hit);
+    // Sound effect only after 5 warmup rounds
+    if (!isWarmup) {
+        playNotificationSound(isTxHup || isClHup || isChamHit || isUnified25Hit);
+    }
 
     const roundData = {
         period: period,
@@ -948,8 +1150,8 @@ function addNewRound(period, digits) {
         detailText: evalRes.detailText,
         actualTx: evalRes.tx,
         actualCl: evalRes.cl,
-        predTx: currentPred.predTx || '--',
-        predCl: currentPred.predCl || '--',
+        predTx: isWarmup ? '--' : (currentPred.predTx || '--'),
+        predCl: isWarmup ? '--' : (currentPred.predCl || '--'),
         predTxConf: currentPred.predTxConf || 50,
         predClConf: currentPred.predClConf || 50,
         predCham: predChamArr,
@@ -967,20 +1169,30 @@ function addNewRound(period, digits) {
         hauNhiVal: hauNhiVal,
         isHauNhiHit: isHauNhiHit,
         isUnified25Hit: isUnified25Hit,
+        isWarmup: isWarmup,
+        warmupNum: isWarmup ? warmupNum : null,
         statusCham: statusCham,
         statusChamDetail: statusChamDetail,
         statusTx: statusTx,
         statusCl: statusCl,
         statusOverall: statusOverall,
-        isHup: isTxHup || isClHup,
-        isDoubleHup: isTxHup && isClHup,
-        bridgePattern: currentPred.patternName || 'Nhịp khởi tạo',
-        bridgeReason: currentPred.reason || 'Dữ liệu phân tích ban đầu'
+        isHup: isWarmup ? false : (isTxHup || isClHup),
+        isDoubleHup: isWarmup ? false : (isTxHup && isClHup),
+        bridgePattern: isWarmup ? `Mốc Gốc Khởi Tạo #${warmupNum}/5 (Chưa vào tiền)` : (currentPred.patternName || 'Nhịp đang chạy'),
+        bridgeReason: isWarmup ? '5 kỳ kết quả đầu tiên được lưu làm mốc dữ liệu nền khởi tạo nhịp cầu' : (currentPred.reason || 'Dữ liệu phân tích')
     };
 
     STATE.rounds.push(roundData);
     saveToLocalStorage();
     updateAllViews();
+}
+
+function recalculateAllRounds() {
+    const originalRounds = [...STATE.rounds];
+    STATE.rounds = [];
+    originalRounds.forEach(r => {
+        addNewRound(r.period, r.digits);
+    });
 }
 
 function initNextPeriodInput() {
@@ -1033,12 +1245,332 @@ function clearAllData() {
 }
 
 /* ==========================================================================
+   CAPITAL MANAGEMENT & SMART BET SIZING ENGINE
+   ========================================================================== */
+
+function formatMoney(amount, withUnit = true) {
+    if (isNaN(amount) || amount === null || amount === undefined) amount = 0;
+    const formatted = Math.round(amount).toLocaleString('vi-VN');
+    return withUnit ? `${formatted} đ` : formatted;
+}
+
+function calculateCapitalPlan(totalCapital = STATE.capital, safeFrames = STATE.safeFrames, betStrategy = STATE.betStrategy, payoutRate = STATE.payoutRate) {
+    totalCapital = Math.max(100000, Number(totalCapital) || 30000000);
+    safeFrames = Math.max(1, Number(safeFrames) || 5);
+    payoutRate = Number(payoutRate) || 99;
+    
+    const frameBudget = Math.floor(totalCapital / safeFrames);
+    const isDual = betStrategy === 'dual';
+    const numCount = isDual ? 50 : 25;
+    
+    let step1PerNum, step2PerNum, step3PerNum;
+    
+    if (!isDual) {
+        // Tỷ lệ chuẩn cho 1 cửa 25 số
+        step1PerNum = Math.max(1000, Math.round((frameBudget * 0.0833) / (25 * 1000)) * 1000); // 20k -> 500k
+        step2PerNum = Math.max(step1PerNum * 2, Math.round((frameBudget * 0.25) / (25 * 1000)) * 1000); // 60k -> 1.5M
+        const rem3 = frameBudget - (step1PerNum * 25) - (step2PerNum * 25);
+        step3PerNum = Math.max(step2PerNum * 2, Math.floor(rem3 / (25 * 1000)) * 1000); // 160k -> 4M
+    } else {
+        // Tỷ lệ chuẩn cho CẢ 2 ĐẦU: 50 số (25 Tiền Nhị + 25 Hậu Nhị)
+        // Tay 1: 20k/số -> 500k Tiền + 500k Hậu = 1.000.000đ
+        step1PerNum = Math.max(1000, Math.round((frameBudget / 6) / (50 * 1000)) * 1000); 
+        // Tay 2: 35k/số -> 875k Tiền + 875k Hậu = 1.750.000đ
+        step2PerNum = Math.max(step1PerNum, Math.round((frameBudget * 0.29166) / (50 * 1000)) * 1000);
+        // Tay 3: 65k/số -> 1.625k Tiền + 1.625k Hậu = 3.250.000đ -> Khớp tròn 6M!
+        const rem3 = frameBudget - (step1PerNum * 50) - (step2PerNum * 50);
+        step3PerNum = Math.max(step2PerNum, Math.floor(rem3 / (50 * 1000)) * 1000);
+    }
+
+    const bet1Total = step1PerNum * numCount;
+    const bet2Total = step2PerNum * numCount;
+    const bet3Total = step3PerNum * numCount;
+    const totalFrameCost = bet1Total + bet2Total + bet3Total;
+
+    const perHead1 = step1PerNum * 25;
+    const perHead2 = step2PerNum * 25;
+    const perHead3 = step3PerNum * 25;
+
+    // Trúng thưởng (1 ăn 99)
+    const win1Return = step1PerNum * payoutRate;
+    const win1Profit = win1Return - bet1Total;
+    const win1ProfitBoth = (win1Return * 2) - bet1Total;
+
+    const win2Return = step2PerNum * payoutRate;
+    const win2Profit = win2Return - (bet1Total + bet2Total);
+    const win2ProfitBoth = (win2Return * 2) - (bet1Total + bet2Total);
+
+    const win3Return = step3PerNum * payoutRate;
+    const win3Profit = win3Return - totalFrameCost;
+    const win3ProfitBoth = (win3Return * 2) - totalFrameCost;
+
+    return {
+        totalCapital,
+        safeFrames,
+        frameBudget,
+        actualFrameCost: totalFrameCost,
+        betStrategy,
+        isDual,
+        payoutRate,
+        numCount,
+        steps: [
+            {
+                stepNum: 1,
+                name: 'TAY 1',
+                title: 'TAY 1 / 3 (Khởi Đầu)',
+                perNum: step1PerNum,
+                perHead: perHead1,
+                totalBet: bet1Total,
+                cumCost: bet1Total,
+                winReturn: win1Return,
+                profit: win1Profit,
+                profitBoth: win1ProfitBoth,
+                advice: 'Vốn Thăm Dò'
+            },
+            {
+                stepNum: 2,
+                name: 'TAY 2',
+                title: 'TAY 2 / 3 (Gấp Thếp)',
+                perNum: step2PerNum,
+                perHead: perHead2,
+                totalBet: bet2Total,
+                cumCost: bet1Total + bet2Total,
+                winReturn: win2Return,
+                profit: win2Profit,
+                profitBoth: win2ProfitBoth,
+                advice: 'Tăng Tốc Gấp Thếp'
+            },
+            {
+                stepNum: 3,
+                name: 'TAY 3',
+                title: 'TAY 3 / 3 (Quyết Đấu)',
+                perNum: step3PerNum,
+                perHead: perHead3,
+                totalBet: bet3Total,
+                cumCost: totalFrameCost,
+                winReturn: win3Return,
+                profit: win3Profit,
+                profitBoth: win3ProfitBoth,
+                advice: 'Quyết Đấu Chốt Khung'
+            }
+        ]
+    };
+}
+
+function handleCapitalInputChange(val) {
+    const raw = String(val).replace(/\D/g, '');
+    const num = parseInt(raw) || 0;
+    STATE.capital = num;
+    const inputElem = document.getElementById('capitalInput');
+    if (inputElem && raw.length > 0) {
+        inputElem.value = num.toLocaleString('vi-VN');
+    }
+    updateQuickCapButtons(num);
+    saveToLocalStorage();
+    updateCapitalUI();
+}
+
+function setQuickCapital(amount) {
+    STATE.capital = amount;
+    const inputElem = document.getElementById('capitalInput');
+    if (inputElem) {
+        inputElem.value = amount.toLocaleString('vi-VN');
+    }
+    updateQuickCapButtons(amount);
+    saveToLocalStorage();
+    updateCapitalUI();
+}
+
+function updateQuickCapButtons(amount) {
+    const btns = document.querySelectorAll('.btn-quick-cap');
+    btns.forEach(btn => {
+        const text = btn.innerText.trim();
+        let capVal = 0;
+        if (text === '10M') capVal = 10000000;
+        else if (text === '20M') capVal = 20000000;
+        else if (text === '30M') capVal = 30000000;
+        else if (text === '50M') capVal = 50000000;
+        else if (text === '100M') capVal = 100000000;
+        btn.classList.toggle('active', capVal === amount);
+    });
+}
+
+function handleSafeFramesChange(val) {
+    STATE.safeFrames = parseInt(val) || 5;
+    saveToLocalStorage();
+    updateCapitalUI();
+}
+
+function handleBetStrategyChange(val) {
+    STATE.betStrategy = val;
+    saveToLocalStorage();
+    updateCapitalUI();
+}
+
+function updateCapitalUI() {
+    const plan = calculateCapitalPlan();
+    const isDual = plan.isDual;
+    
+    // 1. Sync header / info elements
+    const budgetPerFrameDisplay = document.getElementById('budgetPerFrameDisplay');
+    const safeBadgeDisplay = document.getElementById('safeBadgeDisplay');
+    const payoutRateDisplay = document.getElementById('payoutRateDisplay');
+    const betStrategySelect = document.getElementById('betStrategySelect');
+    
+    if (betStrategySelect && betStrategySelect.value !== STATE.betStrategy) {
+        betStrategySelect.value = STATE.betStrategy;
+    }
+    if (budgetPerFrameDisplay) {
+        budgetPerFrameDisplay.innerText = formatMoney(plan.frameBudget);
+    }
+    if (safeBadgeDisplay) {
+        safeBadgeDisplay.innerHTML = `<i class="fa-solid fa-shield-halved text-cyan"></i> ${STATE.safeFrames} Khung An Toàn`;
+    }
+    if (payoutRateDisplay) {
+        payoutRateDisplay.innerText = `1 ăn ${STATE.payoutRate}`;
+    }
+
+    // 2. Render Step Cards
+    const step1 = plan.steps[0];
+    const step2 = plan.steps[1];
+    const step3 = plan.steps[2];
+
+    const capStep1PerNum = document.getElementById('capStep1PerNum');
+    const capStep1HeadVal = document.getElementById('capStep1HeadVal');
+    const capStep1HeadRow = document.getElementById('capStep1HeadRow');
+    const capStep1Total = document.getElementById('capStep1Total');
+    const capStep1Profit = document.getElementById('capStep1Profit');
+    const capStep1BothRow = document.getElementById('capStep1BothRow');
+    const capStep1ProfitBoth = document.getElementById('capStep1ProfitBoth');
+
+    const capStep2PerNum = document.getElementById('capStep2PerNum');
+    const capStep2HeadVal = document.getElementById('capStep2HeadVal');
+    const capStep2HeadRow = document.getElementById('capStep2HeadRow');
+    const capStep2Total = document.getElementById('capStep2Total');
+    const capStep2Profit = document.getElementById('capStep2Profit');
+    const capStep2BothRow = document.getElementById('capStep2BothRow');
+    const capStep2ProfitBoth = document.getElementById('capStep2ProfitBoth');
+
+    const capStep3PerNum = document.getElementById('capStep3PerNum');
+    const capStep3HeadVal = document.getElementById('capStep3HeadVal');
+    const capStep3HeadRow = document.getElementById('capStep3HeadRow');
+    const capStep3Total = document.getElementById('capStep3Total');
+    const capStep3Profit = document.getElementById('capStep3Profit');
+    const capStep3BothRow = document.getElementById('capStep3BothRow');
+    const capStep3ProfitBoth = document.getElementById('capStep3ProfitBoth');
+
+    if (capStep1PerNum) capStep1PerNum.innerText = formatMoney(step1.perNum);
+    if (capStep1HeadVal) capStep1HeadVal.innerText = `${formatMoney(step1.perHead)} / đầu`;
+    if (capStep1HeadRow) capStep1HeadRow.style.display = isDual ? 'flex' : 'none';
+    if (capStep1Total) capStep1Total.innerText = formatMoney(step1.totalBet);
+    if (capStep1Profit) capStep1Profit.innerText = `+${formatMoney(step1.profit)}`;
+    if (capStep1BothRow) capStep1BothRow.style.display = isDual ? 'flex' : 'none';
+    if (capStep1ProfitBoth) capStep1ProfitBoth.innerText = `+${formatMoney(step1.profitBoth)}`;
+
+    if (capStep2PerNum) capStep2PerNum.innerText = formatMoney(step2.perNum);
+    if (capStep2HeadVal) capStep2HeadVal.innerText = `${formatMoney(step2.perHead)} / đầu`;
+    if (capStep2HeadRow) capStep2HeadRow.style.display = isDual ? 'flex' : 'none';
+    if (capStep2Total) capStep2Total.innerText = formatMoney(step2.totalBet);
+    if (capStep2Profit) capStep2Profit.innerText = `+${formatMoney(step2.profit)}`;
+    if (capStep2BothRow) capStep2BothRow.style.display = isDual ? 'flex' : 'none';
+    if (capStep2ProfitBoth) capStep2ProfitBoth.innerText = `+${formatMoney(step2.profitBoth)}`;
+
+    if (capStep3PerNum) capStep3PerNum.innerText = formatMoney(step3.perNum);
+    if (capStep3HeadVal) capStep3HeadVal.innerText = `${formatMoney(step3.perHead)} / đầu`;
+    if (capStep3HeadRow) capStep3HeadRow.style.display = isDual ? 'flex' : 'none';
+    if (capStep3Total) capStep3Total.innerText = formatMoney(step3.totalBet);
+    if (capStep3Profit) capStep3Profit.innerText = `+${formatMoney(step3.profit)}`;
+    if (capStep3BothRow) capStep3BothRow.style.display = isDual ? 'flex' : 'none';
+    if (capStep3ProfitBoth) capStep3ProfitBoth.innerText = `+${formatMoney(step3.profitBoth)}`;
+
+    // 3. Highlight current active step based on active frame
+    const frameData = computeFrameHistory(STATE.rounds);
+    const active = frameData.activeFrame;
+    const isWarmup = active ? (active.isWarmup === true) : (STATE.rounds.length < 5);
+    const currentTay = active ? (active.currentTay || 1) : 1;
+
+    const card1 = document.getElementById('capCardStep1');
+    const card2 = document.getElementById('capCardStep2');
+    const card3 = document.getElementById('capCardStep3');
+
+    if (card1) card1.classList.toggle('active-tay-glow', !isWarmup && currentTay === 1);
+    if (card2) card2.classList.toggle('active-tay-glow', !isWarmup && currentTay === 2);
+    if (card3) card3.classList.toggle('active-tay-glow', !isWarmup && currentTay === 3);
+
+    const liveBetStepText = document.getElementById('liveBetStepText');
+    const capLivePromptText = document.getElementById('capLivePromptText');
+
+    const curStepData = plan.steps[currentTay - 1] || plan.steps[0];
+    const kNum = curStepData.perNum >= 1000 ? `${Math.round(curStepData.perNum / 1000)}K/số` : `${formatMoney(curStepData.perNum)}/số`;
+
+    if (liveBetStepText) {
+        if (isWarmup) {
+            liveBetStepText.innerText = `NẠP GỐC ${STATE.rounds.length}/5 (Chưa vào tiền)`;
+        } else {
+            liveBetStepText.innerText = `TAY ${currentTay} / 3 (${currentTay === 1 ? 'Khởi Đầu' : (currentTay === 2 ? 'Gấp Thếp' : 'Quyết Đấu')})`;
+        }
+    }
+
+    const bridgeHealth = evaluateBridgeHealth(STATE.rounds, frameData);
+
+    if (capLivePromptText) {
+        if (isWarmup) {
+            capLivePromptText.innerHTML = `
+                ⏳ <b>ĐANG NẠP 5 KỲ DỮ LIỆU GỐC (${STATE.rounds.length}/5):</b> Hệ thống đang thu thập dữ liệu khởi tạo nhịp cầu và giải mã Pascal. <b>CHƯA CẦN VÀO TIỀN</b>. Khung nuôi #1 sẽ chính thức bắt đầu từ <b>Kỳ thứ 6</b>!
+            `;
+        } else if (bridgeHealth.level === 'red' && currentTay === 1) {
+            capLivePromptText.innerHTML = `
+                🛑 <b>CẢNH BÁO TÍN HIỆU AI (ĐÈN ĐỎ):</b> Cầu đang có dấu hiệu gãy bão. Khuyến nghị <b>TẠM NGHỈ KHUNG NÀY (ĐỨNG NGOÀI QUAN SÁT)</b> để bảo toàn trọn vẹn số vốn! (Nếu vẫn thử, chỉ đặt thăm dò nhỏ 10k/số).
+            `;
+        } else if (isDual) {
+            const signalPrefix = bridgeHealth.level === 'green' ? '🟢 <b>TÍN HIỆU CẦU CHUẨN ĐẸP (NÊN VÀO TIỀN):</b>' : (bridgeHealth.level === 'yellow' ? '🟡 <b>TÍN HIỆU CẦU TRUNG BÌNH (VÀO TIỀN NHẸ):</b>' : '🛑 <b>CẢNH BÁO CẦU GÃY NHỊP:</b>');
+            capLivePromptText.innerHTML = `
+                ${signalPrefix} Bạn đang ở <b>TAY ${currentTay} / 3</b> ➔ Đặt <b>${kNum}</b> (Tiền Nhị: <b>${formatMoney(curStepData.perHead)}</b> + Hậu Nhị: <b>${formatMoney(curStepData.perHead)}</b> ➔ Tổng: <b>${formatMoney(curStepData.totalBet)}</b>). Húp 1 đầu lãi <b class="text-green">+${formatMoney(curStepData.profit)}</b> (Ăn kép 2 đầu lãi <b class="text-gold">+${formatMoney(curStepData.profitBoth)}</b>)!
+            `;
+        } else {
+            const signalPrefix = bridgeHealth.level === 'green' ? '🟢 <b>TÍN HIỆU CẦU CHUẨN ĐẸP:</b>' : (bridgeHealth.level === 'yellow' ? '🟡 <b>TÍN HIỆU CẦU TRUNG BÌNH:</b>' : '🛑 <b>CẢNH BÁO CẦU GÃY:</b>');
+            capLivePromptText.innerHTML = `
+                ${signalPrefix} Bạn đang ở <b>TAY ${currentTay} / 3</b> ➔ Đặt <b>${kNum}</b> (Tổng cược: <b>${formatMoney(curStepData.totalBet)}</b> cho 25 số VIP). Húp lãi ròng: <b class="text-green">+${formatMoney(curStepData.profit)}</b> ➔ Trúng là dừng mở khung mới!
+            `;
+        }
+    }
+
+    // Update active frame card bet advice
+    const betAdvice = document.getElementById('activeFrameBetAdvice');
+    if (betAdvice) {
+        if (isWarmup) {
+            betAdvice.innerHTML = `<span class="text-cyan"><i class="fa-solid fa-seedling"></i> <b>Đang nạp 5 kỳ gốc (${STATE.rounds.length}/5)</b> ➔ <b>Chưa vào tiền</b> (Khung #1 bắt đầu từ Kỳ 6)</span>`;
+        } else {
+            const colorClass = currentTay === 1 ? 'text-green' : (currentTay === 2 ? 'text-yellow' : 'text-red');
+            if (isDual) {
+                betAdvice.innerHTML = `<span class="${colorClass}"><b>TAY ${currentTay}: Đánh ${kNum} (${formatMoney(curStepData.perHead)}/đầu ➔ Tổng: ${formatMoney(curStepData.totalBet)}) ➔ Húp 1 đầu Lãi +${formatMoney(curStepData.profit)}</b></span>`;
+            } else {
+                betAdvice.innerHTML = `<span class="${colorClass}"><b>TAY ${currentTay}: Đánh ${kNum} (Tổng: ${formatMoney(curStepData.totalBet)}) ➔ Húp Lãi +${formatMoney(curStepData.profit)}</b></span>`;
+            }
+        }
+    }
+
+    // Update predChamBox bet pill
+    const predChamBetText = document.getElementById('predChamBetText');
+    if (predChamBetText) {
+        if (isWarmup) {
+            predChamBetText.innerText = `Nạp gốc ${STATE.rounds.length}/5 • Khung #1 từ Kỳ 6`;
+        } else if (isDual) {
+            predChamBetText.innerText = `${kNum} • ${formatMoney(curStepData.perHead, false)}/đầu (Tổng: ${formatMoney(curStepData.totalBet)})`;
+        } else {
+            predChamBetText.innerText = `${kNum} (Tổng: ${formatMoney(curStepData.totalBet)})`;
+        }
+    }
+}
+
+/* ==========================================================================
    UI RENDERING & DASHBOARD UPDATES
    ========================================================================== */
 
 function updateAllViews() {
     updatePredictionCard();
     updateFrameUI();
+    updateCapitalUI();
     update10RoundStats();
     updateRoadmap();
     updateHistoryTable();
@@ -1128,8 +1660,13 @@ function updatePredictionCard() {
     const frameData = computeFrameHistory(STATE.rounds);
     const activeFrame = frameData.activeFrame;
     let fromNum = 101, toNum = 103, currentTay = 1;
+    let rangeString = '';
+    let tayString = '';
 
-    if (activeFrame && activeFrame.startPeriod && activeFrame.startPeriod !== 'Khởi đầu') {
+    if (activeFrame && activeFrame.isWarmup) {
+        rangeString = `Đang nạp 5 kỳ gốc (${activeFrame.warmupCount || STATE.rounds.length}/5)`;
+        tayString = `(Khung #1 từ Kỳ 6)`;
+    } else if (activeFrame && activeFrame.startPeriod && activeFrame.startPeriod !== 'Khởi đầu') {
         const match = String(activeFrame.startPeriod).match(/\d+/);
         if (match) {
             const startN = parseInt(match[0]);
@@ -1140,6 +1677,8 @@ function updatePredictionCard() {
             toNum = STATE.rounds.length + 3;
         }
         currentTay = activeFrame.currentTay || 1;
+        rangeString = `Kỳ ${fromNum} ➔ Kỳ ${toNum}`;
+        tayString = `(Tay ${currentTay}/3)`;
     } else if (STATE.rounds.length > 0) {
         const lastP = STATE.rounds[STATE.rounds.length - 1].period;
         const match = String(lastP).match(/\d+/);
@@ -1147,10 +1686,12 @@ function updatePredictionCard() {
         fromNum = startN + 1;
         toNum = startN + 3;
         currentTay = 1;
+        rangeString = `Kỳ ${fromNum} ➔ Kỳ ${toNum}`;
+        tayString = `(Tay ${currentTay}/3)`;
+    } else {
+        rangeString = `Kỳ 101 ➔ Kỳ 103`;
+        tayString = `(Tay 1/3)`;
     }
-
-    const rangeString = `Kỳ ${fromNum} ➔ Kỳ ${toNum}`;
-    const tayString = `(Tay ${currentTay}/3)`;
 
     const predChamRangeText = document.getElementById('predChamRangeText');
     const predChamTayText = document.getElementById('predChamTayText');
@@ -1239,14 +1780,35 @@ function updatePredictionCard() {
                             ${nextPred.predChamReason || ''}
                         </div>
                     </div>
+
+                    <!-- DÒNG 4: BỘ ĐÁNH GIÁ ĐỘ MẠNH CẦU & KIẾN NGHỊ VÀO VỐN AI -->
+                    <div class="insight-bullet-item item-signal ${nextPred.bridgeHealth ? (nextPred.bridgeHealth.level === 'green' ? 'signal-item-green' : (nextPred.bridgeHealth.level === 'yellow' ? 'signal-item-yellow' : 'signal-item-red')) : ''}">
+                        <div class="insight-bullet-header">
+                            <span class="insight-badge badge-signal ${nextPred.bridgeHealth ? nextPred.bridgeHealth.badgeClass : 'signal-green'}">${nextPred.bridgeHealth ? nextPred.bridgeHealth.icon : ''} ${nextPred.bridgeHealth ? nextPred.bridgeHealth.title : 'KIẾN NGHỊ VÀO VỐN AI'}</span>
+                            <span class="insight-badge-sub">Độ Chuẩn Cầu: <b>${nextPred.bridgeHealth ? nextPred.bridgeHealth.scoreText : '85%'}</b> (${nextPred.bridgeHealth ? nextPred.bridgeHealth.activeBridgesCount : 4}/6 Cầu Thông)</span>
+                        </div>
+                        <div class="insight-bullet-body">
+                            ${nextPred.bridgeHealth ? nextPred.bridgeHealth.advice : ''}
+                        </div>
+                    </div>
                 </div>
             `;
         }
     }
 
+    // Update predChamSignalPill in 5 Cham Box header
+    const predChamSignalPill = document.getElementById('predChamSignalPill');
+    const predChamSignalText = document.getElementById('predChamSignalText');
+    if (predChamSignalPill && predChamSignalText && nextPred.bridgeHealth) {
+        predChamSignalPill.className = `pred-signal-pill ${nextPred.bridgeHealth.badgeClass}`;
+        predChamSignalText.innerText = nextPred.bridgeHealth.shortSignal;
+    }
+
     // Render Tags
     if (tagsContainer) {
+        const sigTag = nextPred.bridgeHealth ? `<span class="bridge-tag ${nextPred.bridgeHealth.badgeClass}">${nextPred.bridgeHealth.icon} ${nextPred.bridgeHealth.shortSignal}</span>` : '';
         tagsContainer.innerHTML = `
+            ${sigTag}
             <span class="bridge-tag tag-bet"><i class="fa-solid fa-wave-square"></i> ${nextPred.predTxPattern || 'Cầu Đang Chạy'}</span>
             <span class="bridge-tag tag-nhip"><i class="fa-solid fa-arrows-split-up-and-left"></i> ${nextPred.predClPattern || 'Nhịp Đồng Bộ'}</span>
             <span class="bridge-tag" style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:rgba(245,158,11,0.4);"><i class="fa-solid fa-crown text-gold"></i> Dàn 25 Số VIP (${phucHopMaster.length} số - Đánh Tiền & Hậu: ${rangeString})</span>
@@ -1259,20 +1821,29 @@ function updatePredictionCard() {
    ========================================================================== */
 
 function computeFrameHistory(rounds) {
-    if (!rounds || rounds.length === 0) {
-        const defaultCham = [8, 5, 7, 0, 9];
+    const WARMUP_COUNT = 5;
+
+    if (!rounds || rounds.length < WARMUP_COUNT) {
+        const warmupLen = rounds ? rounds.length : 0;
+        const lastR = (rounds && rounds.length > 0) ? rounds[rounds.length - 1] : null;
+        const defaultDigits = lastR ? lastR.digits : [5, 6, 8, 9, 2];
+        const defaultCham = (rounds && rounds.length > 0) ? (analyzeTop5Cham(rounds).masterDigits || [8, 5, 7, 0, 9]) : [8, 5, 7, 0, 9];
+
         return {
             frames: [],
             activeFrame: {
                 frameId: 1,
-                startPeriod: 'Khởi đầu',
-                startDigits: [5, 6, 8, 9, 2],
+                isWarmup: true,
+                warmupCount: warmupLen,
+                warmupNeeded: WARMUP_COUNT,
+                startPeriod: lastR ? lastR.period : 'Khởi đầu',
+                startDigits: defaultDigits,
                 cham5: defaultCham,
                 dan25: generatePhucHop25(defaultCham),
                 dan20: generatePhucHop20(defaultCham),
                 steps: [],
                 currentTay: 1,
-                status: 'running'
+                status: 'warmup'
             },
             stats: {
                 totalDone: 0,
@@ -1285,68 +1856,102 @@ function computeFrameHistory(rounds) {
                 rateStep1: 0,
                 rateStep2: 0,
                 rateStep3: 0,
-                rateLost: 0
+                rateLost: 0,
+                hitTienCount: 0,
+                hitHauCount: 0,
+                hitBothCount: 0,
+                rateTien: 0,
+                rateHau: 0,
+                rateBoth: 0,
+                biasType: 'equal',
+                biasTitle: 'CHỜ DỮ LIỆU GỐC (5 KỲ)',
+                biasAdvice: 'Đang thu thập 5 kỳ kết quả mốc gốc ban đầu. Khung #1 sẽ bắt đầu mở tại Kỳ 6.',
+                biasClass: 'bias-equal',
+                stepHitTienTotal: 0,
+                stepHitHauTotal: 0,
+                totalStepsPlayed: 0
             }
         };
     }
 
     const frames = [];
-    let currentFrame = null;
-    const historySoFar = [];
+    const historySoFar = rounds.slice(0, WARMUP_COUNT);
+    const baseRound = rounds[WARMUP_COUNT - 1]; // Kỳ thứ 5 làm Mốc Gốc Khung #1
+    const chamInfo1 = analyzeTop5Cham(historySoFar);
+    const cham5Init = chamInfo1.masterDigits;
 
-    for (let i = 0; i < rounds.length; i++) {
+    let currentFrame = {
+        frameId: 1,
+        startPeriod: baseRound.period,
+        startDigits: baseRound.digits,
+        cham5: cham5Init,
+        dan25: generatePhucHop25(cham5Init),
+        dan20: generatePhucHop20(cham5Init),
+        goldenPair: chamInfo1.goldenPair,
+        unitDouble: chamInfo1.unitDouble,
+        steps: [],
+        isResolved: false,
+        wonStep: null,
+        status: 'running',
+        isWarmup: false
+    };
+
+    // Đánh giá các kỳ tiếp theo bắt đầu từ Kỳ thứ 6 (index = 5)
+    for (let i = WARMUP_COUNT; i < rounds.length; i++) {
         const r = rounds[i];
+        const stepNum = currentFrame.steps.length + 1; // Tay 1, 2 hoặc 3
+        const tien = `${r.digits[0]}${r.digits[1]}`;
+        const hau = `${r.digits[3]}${r.digits[4]}`;
+        const hitTien = currentFrame.dan25.includes(tien);
+        const hitHau = currentFrame.dan25.includes(hau);
+        const isHit = hitTien || hitHau;
 
-        if (!currentFrame) {
-            // Khởi tạo Khung #1 từ kỳ đầu tiên
-            historySoFar.push(r);
-            const chamInfo = analyzeTop5Cham(historySoFar);
-            const cham5 = chamInfo.masterDigits;
+        currentFrame.steps.push({
+            stepNum,
+            period: r.period,
+            digits: r.digits,
+            tien,
+            hau,
+            hitTien,
+            hitHau,
+            isHit
+        });
+
+        historySoFar.push(r);
+
+        if (isHit) {
+            // TRÚNG KHUNG: Đánh dấu Húp, lưu khung và ĐỔI DÀN NGAY LẬP TỨC từ kỳ vừa trúng này
+            currentFrame.isResolved = true;
+            currentFrame.wonStep = stepNum;
+            currentFrame.status = 'won';
+            currentFrame.winType = (hitTien && hitHau) ? 'Cả Tiền & Hậu' : (hitTien ? 'Tiền Nhị' : 'Hậu Nhị');
+            frames.push(currentFrame);
+
+            // Khởi tạo Khung Mới từ kết quả kỳ r vừa trúng
+            const nextCham = analyzeTop5Cham(historySoFar);
             currentFrame = {
                 frameId: frames.length + 1,
                 startPeriod: r.period,
                 startDigits: r.digits,
-                cham5: cham5,
-                dan25: generatePhucHop25(cham5),
-                dan20: generatePhucHop20(cham5),
-                goldenPair: chamInfo.goldenPair,
-                unitDouble: chamInfo.unitDouble,
+                cham5: nextCham.masterDigits,
+                dan25: generatePhucHop25(nextCham.masterDigits),
+                dan20: generatePhucHop20(nextCham.masterDigits),
+                goldenPair: nextCham.goldenPair,
+                unitDouble: nextCham.unitDouble,
                 steps: [],
                 isResolved: false,
                 wonStep: null,
-                status: 'running'
+                status: 'running',
+                isWarmup: false
             };
         } else {
-            // Đối soát kỳ quay r với Khung đang chạy
-            const stepNum = currentFrame.steps.length + 1; // Tay 1, 2 hoặc 3
-            const tien = `${r.digits[0]}${r.digits[1]}`;
-            const hau = `${r.digits[3]}${r.digits[4]}`;
-            const hitTien = currentFrame.dan25.includes(tien);
-            const hitHau = currentFrame.dan25.includes(hau);
-            const isHit = hitTien || hitHau;
-
-            currentFrame.steps.push({
-                stepNum,
-                period: r.period,
-                digits: r.digits,
-                tien,
-                hau,
-                hitTien,
-                hitHau,
-                isHit
-            });
-
-            historySoFar.push(r);
-
-            if (isHit) {
-                // TRÚNG KHUNG: Đánh dấu Húp, lưu khung và ĐỔI DÀN NGAY LẬP TỨC từ kỳ vừa trúng này
+            if (stepNum >= 3) {
+                // GÃY KHUNG: Quá 3 tay không trúng -> Chốt Gãy Khung và mở Khung Mới từ kỳ thứ 3
                 currentFrame.isResolved = true;
-                currentFrame.wonStep = stepNum;
-                currentFrame.status = 'won';
-                currentFrame.winType = (hitTien && hitHau) ? 'Cả Tiền & Hậu' : (hitTien ? 'Tiền Nhị' : 'Hậu Nhị');
+                currentFrame.status = 'lost';
                 frames.push(currentFrame);
 
-                // Khởi tạo Khung Mới từ kết quả kỳ r vừa trúng
+                // Khởi tạo Khung Mới từ kỳ thứ 3 này
                 const nextCham = analyzeTop5Cham(historySoFar);
                 currentFrame = {
                     frameId: frames.length + 1,
@@ -1360,32 +1965,9 @@ function computeFrameHistory(rounds) {
                     steps: [],
                     isResolved: false,
                     wonStep: null,
-                    status: 'running'
+                    status: 'running',
+                    isWarmup: false
                 };
-            } else {
-                if (stepNum >= 3) {
-                    // GÃY KHUNG: Quá 3 tay không trúng -> Chốt Gãy Khung và mở Khung Mới từ kỳ thứ 3
-                    currentFrame.isResolved = true;
-                    currentFrame.status = 'lost';
-                    frames.push(currentFrame);
-
-                    // Khởi tạo Khung Mới từ kỳ thứ 3 này
-                    const nextCham = analyzeTop5Cham(historySoFar);
-                    currentFrame = {
-                        frameId: frames.length + 1,
-                        startPeriod: r.period,
-                        startDigits: r.digits,
-                        cham5: nextCham.masterDigits,
-                        dan25: generatePhucHop25(nextCham.masterDigits),
-                        dan20: generatePhucHop20(nextCham.masterDigits),
-                        goldenPair: nextCham.goldenPair,
-                        unitDouble: nextCham.unitDouble,
-                        steps: [],
-                        isResolved: false,
-                        wonStep: null,
-                        status: 'running'
-                    };
-                }
             }
         }
     }
@@ -1395,18 +1977,65 @@ function computeFrameHistory(rounds) {
     }
 
     let won1 = 0, won2 = 0, won3 = 0, lost = 0;
+    let hitTienCount = 0, hitHauCount = 0, hitBothCount = 0;
+    let stepHitTienTotal = 0, stepHitHauTotal = 0, totalStepsPlayed = 0;
+
     frames.forEach(f => {
         if (f.status === 'won') {
             if (f.wonStep === 1) won1++;
             else if (f.wonStep === 2) won2++;
             else if (f.wonStep === 3) won3++;
+
+            const wonStepData = f.steps.find(s => s.stepNum === f.wonStep);
+            if (wonStepData) {
+                if (wonStepData.hitTien && wonStepData.hitHau) {
+                    hitBothCount++;
+                    hitTienCount++;
+                    hitHauCount++;
+                } else if (wonStepData.hitTien) {
+                    hitTienCount++;
+                } else if (wonStepData.hitHau) {
+                    hitHauCount++;
+                }
+            }
         } else {
             lost++;
         }
+
+        f.steps.forEach(s => {
+            totalStepsPlayed++;
+            if (s.hitTien) stepHitTienTotal++;
+            if (s.hitHau) stepHitHauTotal++;
+        });
     });
 
     const totalDone = frames.length;
     const totalWon = won1 + won2 + won3;
+    const rateTien = totalWon > 0 ? Math.round((hitTienCount / totalWon) * 100) : 0;
+    const rateHau = totalWon > 0 ? Math.round((hitHauCount / totalWon) * 100) : 0;
+    const rateBoth = totalWon > 0 ? Math.round((hitBothCount / totalWon) * 100) : 0;
+
+    // Xác định thiên hướng
+    let biasType = 'equal';
+    let biasTitle = 'CÂN BẰNG 2 ĐẦU';
+    let biasAdvice = 'Dàn 25 số đang nổ đồng đều cả Tiền Nhị & Hậu Nhị. Khuyến nghị chia đều vốn!';
+    let biasClass = 'bias-equal';
+
+    if (hitHauCount > hitTienCount) {
+        biasType = 'hau';
+        biasTitle = `THIÊN VỀ HẬU NHỊ (${rateHau}% vs ${rateTien}%)`;
+        biasAdvice = `Dàn 25 số đang nổ HẬU NHỊ vượt trội (${hitHauCount}/${totalWon} khung trúng). Khuyến nghị ưu tiên dồn vốn vào 2 số đuôi (Hậu Nhị)!`;
+        biasClass = 'bias-hau';
+    } else if (hitTienCount > hitHauCount) {
+        biasType = 'tien';
+        biasTitle = `THIÊN VỀ TIỀN NHỊ (${rateTien}% vs ${rateHau}%)`;
+        biasAdvice = `Dàn 25 số đang nổ TIỀN NHỊ vượt trội (${hitTienCount}/${totalWon} khung trúng). Khuyến nghị ưu tiên dồn vốn vào 2 số đầu (Tiền Nhị)!`;
+        biasClass = 'bias-tien';
+    } else if (totalWon > 0) {
+        biasTitle = `CÂN BẰNG ĐỒNG BỘ (${rateTien}% ⇌ ${rateHau}%)`;
+        biasAdvice = `Dàn 25 số đang nổ cân bằng hoàn hảo (${hitTienCount} Tiền - ${hitHauCount} Hậu). Khuyến nghị vào đều vốn cả Tiền & Hậu!`;
+    }
+
     const stats = {
         totalDone,
         totalWon,
@@ -1418,7 +2047,22 @@ function computeFrameHistory(rounds) {
         rateStep1: totalDone > 0 ? Math.round((won1 / totalDone) * 100) : 0,
         rateStep2: totalDone > 0 ? Math.round((won2 / totalDone) * 100) : 0,
         rateStep3: totalDone > 0 ? Math.round((won3 / totalDone) * 100) : 0,
-        rateLost: totalDone > 0 ? Math.round((lost / totalDone) * 100) : 0
+        rateLost: totalDone > 0 ? Math.round((lost / totalDone) * 100) : 0,
+
+        // Chi tiết Tiền Nhị & Hậu Nhị
+        hitTienCount,
+        hitHauCount,
+        hitBothCount,
+        rateTien,
+        rateHau,
+        rateBoth,
+        biasType,
+        biasTitle,
+        biasAdvice,
+        biasClass,
+        stepHitTienTotal,
+        stepHitHauTotal,
+        totalStepsPlayed
     };
 
     return {
@@ -1446,39 +2090,60 @@ function updateFrameUI() {
     const danDisplay = document.getElementById('activeFrameDanDisplay');
 
     if (active) {
-        if (activeTitle) {
-            activeTitle.innerHTML = `<i class="fa-solid fa-crosshairs text-gold"></i> NUÔI DÀN 25 KHUNG 3 KỲ - KHUNG #${active.frameId || 1}`;
-        }
-
-        const tay = active.currentTay || 1;
-        if (stepBadge) {
-            stepBadge.className = `frame-step-badge badge-step${tay}`;
-            if (tay === 1) stepBadge.innerText = 'TAY 1 / 3 (Khởi Đầu)';
-            else if (tay === 2) stepBadge.innerText = 'TAY 2 / 3 (Gấp Thếp)';
-            else stepBadge.innerText = 'TAY 3 / 3 (Quyết Đấu)';
-        }
-
-        const nextPeriodInput = document.getElementById('periodInput');
-        const nextPeriodVal = (nextPeriodInput && nextPeriodInput.value) ? nextPeriodInput.value : `#${STATE.rounds.length + 1}`;
-
-        if (originElem) {
-            if (active.startPeriod && active.startPeriod !== 'Khởi đầu') {
-                originElem.innerHTML = `
-                    <span><i class="fa-solid fa-flag-checkered text-cyan"></i> Mốc Gốc: <b>Kỳ ${active.startPeriod} [${(active.startDigits || []).join('')}]</b></span>
-                    <span style="margin-left: 8px;"><i class="fa-solid fa-crosshairs text-gold"></i> Đang Đánh Cho: <b class="text-green">${nextPeriodVal} (TAY ${tay}/3)</b></span>
-                `;
-            } else {
-                originElem.innerText = 'Chờ kỳ đầu tiên';
+        if (active.isWarmup) {
+            if (activeTitle) {
+                activeTitle.innerHTML = `<i class="fa-solid fa-hourglass-half text-cyan"></i> ĐANG NẠP DỮ LIỆU GỐC (${active.warmupCount || STATE.rounds.length}/5 KỲ)`;
             }
-        }
+            if (stepBadge) {
+                stepBadge.className = 'frame-step-badge badge-step-warmup';
+                stepBadge.innerText = `MỐC GỐC (${active.warmupCount || STATE.rounds.length}/5) - KHUNG #1 TỪ KỲ 6`;
+            }
+            if (originElem) {
+                originElem.innerHTML = `
+                    <span><i class="fa-solid fa-database text-cyan"></i> Giai đoạn khởi tạo: <b>Đã có ${active.warmupCount || STATE.rounds.length}/5 kỳ mốc gốc</b></span>
+                    <span style="margin-left: 8px; color:var(--text-dim);"><i class="fa-solid fa-circle-info"></i> Chưa vào tiền - Khung #1 sẽ mở tại Kỳ 6</span>
+                `;
+            }
+            if (betAdvice) {
+                betAdvice.innerHTML = `<span class="text-cyan"><i class="fa-solid fa-seedling"></i> <b>Đang nạp 5 kỳ dữ liệu nền (Gốc)</b>. Hệ thống đang tích lũy số liệu 6 Cầu Vàng. <b>Chưa cần vào tiền</b>. Khung nuôi #1 sẽ chính thức bắt đầu từ <b>Kỳ thứ 6</b>!</span>`;
+            }
+        } else {
+            if (activeTitle) {
+                activeTitle.innerHTML = `<i class="fa-solid fa-crosshairs text-gold"></i> NUÔI DÀN 25 KHUNG 3 KỲ - KHUNG #${active.frameId || 1}`;
+            }
 
-        if (betAdvice) {
-            if (tay === 1) {
-                betAdvice.innerHTML = '<span class="text-green">Vốn x1 (Thăm Dò Nhịp)</span>';
-            } else if (tay === 2) {
-                betAdvice.innerHTML = '<span class="text-yellow">Vốn x2 (Hoặc x3 - Gấp Thếp)</span>';
-            } else {
-                betAdvice.innerHTML = '<span class="text-red">Vốn x4 (Hoặc x8 - Tay Quyết Đấu)</span>';
+            const tay = active.currentTay || 1;
+            if (stepBadge) {
+                stepBadge.className = `frame-step-badge badge-step${tay}`;
+                if (tay === 1) stepBadge.innerText = 'TAY 1 / 3 (Khởi Đầu)';
+                else if (tay === 2) stepBadge.innerText = 'TAY 2 / 3 (Gấp Thếp)';
+                else stepBadge.innerText = 'TAY 3 / 3 (Quyết Đấu)';
+            }
+
+            const nextPeriodInput = document.getElementById('periodInput');
+            const nextPeriodVal = (nextPeriodInput && nextPeriodInput.value) ? nextPeriodInput.value : `#${STATE.rounds.length + 1}`;
+
+            if (originElem) {
+                if (active.startPeriod && active.startPeriod !== 'Khởi đầu') {
+                    originElem.innerHTML = `
+                        <span><i class="fa-solid fa-flag-checkered text-cyan"></i> Mốc Gốc: <b>Kỳ ${active.startPeriod} [${(active.startDigits || []).join('')}]</b></span>
+                        <span style="margin-left: 8px;"><i class="fa-solid fa-crosshairs text-gold"></i> Đang Đánh Cho: <b class="text-green">${nextPeriodVal} (TAY ${tay}/3)</b></span>
+                    `;
+                } else {
+                    originElem.innerText = 'Chờ kỳ đầu tiên';
+                }
+            }
+
+            if (betAdvice) {
+                const plan = calculateCapitalPlan();
+                const curStep = plan.steps[tay - 1] || plan.steps[0];
+                const kNum = curStep.perNum >= 1000 ? `${Math.round(curStep.perNum / 1000)}K/số` : `${formatMoney(curStep.perNum)}/số`;
+                const colorClass = tay === 1 ? 'text-green' : (tay === 2 ? 'text-yellow' : 'text-red');
+                if (plan.isDual) {
+                    betAdvice.innerHTML = `<span class="${colorClass}"><b>TAY ${tay}: Đánh ${kNum} (${formatMoney(curStep.perHead)}/đầu ➔ Tổng 2 đầu: ${formatMoney(curStep.totalBet)}) ➔ Húp 1 đầu Lãi +${formatMoney(curStep.profit)}</b></span>`;
+                } else {
+                    betAdvice.innerHTML = `<span class="${colorClass}"><b>TAY ${tay}: Đánh ${kNum} (Tổng: ${formatMoney(curStep.totalBet)}) ➔ Húp Lãi +${formatMoney(curStep.profit)}</b></span>`;
+                }
             }
         }
 
@@ -1497,6 +2162,23 @@ function updateFrameUI() {
 
         if (danDisplay && active.dan25) {
             danDisplay.innerText = active.dan25.join(', ');
+        }
+
+        // 1.2 UPDATE FRAME SIGNAL & ENTRY ADVICE
+        const signalBadge = document.getElementById('activeFrameSignalBadge');
+        const signalScore = document.getElementById('signalScoreVal');
+        const signalAdvice = document.getElementById('activeFrameSignalAdvice');
+        const bridgeHealth = evaluateBridgeHealth(STATE.rounds, frameData);
+
+        if (signalBadge) {
+            signalBadge.className = `signal-traffic-badge ${bridgeHealth.badgeClass}`;
+            signalBadge.innerHTML = `${bridgeHealth.icon} ${bridgeHealth.title}`;
+        }
+        if (signalScore) {
+            signalScore.innerText = bridgeHealth.scoreText;
+        }
+        if (signalAdvice) {
+            signalAdvice.innerHTML = bridgeHealth.advice;
         }
     }
 
@@ -1520,6 +2202,50 @@ function updateFrameUI() {
     if (fStatStep2Ratio) fStatStep2Ratio.innerText = `${stats.wonStep2} Khung`;
     if (fStatStep3) fStatStep3.innerText = `${stats.rateStep3}%`;
     if (fStatStep3Ratio) fStatStep3Ratio.innerText = `${stats.wonStep3} Khung`;
+
+    // 2.2 UPDATE TIỀN NHỊ VS HẬU NHỊ STATS & BIAS
+    const fStatTienKhung = document.getElementById('fStatTienKhung');
+    const fStatTienRate = document.getElementById('fStatTienRate');
+    const fStatHauKhung = document.getElementById('fStatHauKhung');
+    const fStatHauRate = document.getElementById('fStatHauRate');
+    const fStatBothKhung = document.getElementById('fStatBothKhung');
+    const fStatBothRate = document.getElementById('fStatBothRate');
+    const fStatBiasBadge = document.getElementById('fStatBiasBadge');
+    const fStatBiasAdvice = document.getElementById('fStatBiasAdvice');
+    const fStatRatioBarTien = document.getElementById('fStatRatioBarTien');
+    const fStatRatioBarHau = document.getElementById('fStatRatioBarHau');
+
+    if (fStatTienKhung) fStatTienKhung.innerText = `${stats.hitTienCount} Khung`;
+    if (fStatTienRate) fStatTienRate.innerText = `${stats.rateTien}%`;
+    if (fStatHauKhung) fStatHauKhung.innerText = `${stats.hitHauCount} Khung`;
+    if (fStatHauRate) fStatHauRate.innerText = `${stats.rateHau}%`;
+    if (fStatBothKhung) fStatBothKhung.innerText = `${stats.hitBothCount} Khung`;
+    if (fStatBothRate) fStatBothRate.innerText = `${stats.rateBoth}%`;
+
+    if (fStatBiasBadge) {
+        let icon = '<i class="fa-solid fa-scale-balanced"></i>';
+        if (stats.biasType === 'hau') icon = '<i class="fa-solid fa-fire text-purple"></i>';
+        else if (stats.biasType === 'tien') icon = '<i class="fa-solid fa-bolt text-cyan"></i>';
+        fStatBiasBadge.className = `bias-badge ${stats.biasClass}`;
+        fStatBiasBadge.innerHTML = `${icon} ${stats.biasTitle}`;
+    }
+
+    if (fStatBiasAdvice) {
+        fStatBiasAdvice.innerText = stats.biasAdvice;
+    }
+
+    if (fStatRatioBarTien && fStatRatioBarHau) {
+        const totalCompare = stats.hitTienCount + stats.hitHauCount;
+        let pctTien = 50, pctHau = 50;
+        if (totalCompare > 0) {
+            pctTien = Math.round((stats.hitTienCount / totalCompare) * 100);
+            pctHau = 100 - pctTien;
+        }
+        fStatRatioBarTien.style.width = `${pctTien}%`;
+        fStatRatioBarHau.style.width = `${pctHau}%`;
+        fStatRatioBarTien.innerText = `Tiền ${pctTien}%`;
+        fStatRatioBarHau.innerText = `Hậu ${pctHau}%`;
+    }
 
     // 3. UPDATE FRAME HISTORY LIST
     const listContainer = document.getElementById('frameHistoryListContainer');
@@ -1617,7 +2343,9 @@ function update10RoundStats() {
     const totalBadge = document.getElementById('totalRoundsBadge');
     if (totalBadge) totalBadge.innerText = `Đã lưu: ${STATE.rounds.length} Kỳ`;
 
-    const last10 = STATE.rounds.slice(-10);
+    // Only playable rounds (after 5 warmup rounds) count towards win/loss tracking
+    const playableRounds = STATE.rounds.filter(r => !r.isWarmup);
+    const last10 = playableRounds.slice(-10);
     const totalSlots = 10;
     const emptyCount = totalSlots - last10.length;
 
@@ -1639,6 +2367,30 @@ function update10RoundStats() {
     if (txGayElem) txGayElem.innerText = txGay;
     const txRate = last10.length > 0 ? Math.round((txHup / last10.length) * 100) : 0;
     if (txRateElem) txRateElem.innerText = `${txRate}%`;
+
+    // Mini TX Tracker in Prediction Box
+    const txMiniHupElem = document.getElementById('txMiniHupRatio');
+    const txMiniRateElem = document.getElementById('txMiniWinRate');
+    const txMiniDotsGrid = document.getElementById('txMiniDots');
+    if (txMiniHupElem) txMiniHupElem.innerText = `${txHup}/${last10.length || 0} Húp`;
+    if (txMiniRateElem) txMiniRateElem.innerText = `${txRate}%`;
+    if (txMiniDotsGrid) {
+        txMiniDotsGrid.innerHTML = '';
+        for (let i = 0; i < emptyCount; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'mini-dot dot-empty';
+            dot.innerText = '-';
+            txMiniDotsGrid.appendChild(dot);
+        }
+        last10.forEach(r => {
+            const isWin = r.statusTx === 'Húp';
+            const dot = document.createElement('div');
+            dot.className = `mini-dot ${isWin ? 'dot-hup' : 'dot-gay'}`;
+            dot.innerText = isWin ? 'H' : 'G';
+            dot.title = `Kỳ ${r.period}: AI đoán ${r.predTx} ➔ Ra ${r.actualTx} (${isWin ? 'HÚP ✓' : 'GÃY ✗'})`;
+            txMiniDotsGrid.appendChild(dot);
+        });
+    }
 
     if (txBadgesGrid) {
         txBadgesGrid.innerHTML = '';
@@ -1681,6 +2433,30 @@ function update10RoundStats() {
     if (clGayElem) clGayElem.innerText = clGay;
     const clRate = last10.length > 0 ? Math.round((clHup / last10.length) * 100) : 0;
     if (clRateElem) clRateElem.innerText = `${clRate}%`;
+
+    // Mini CL Tracker in Prediction Box
+    const clMiniHupElem = document.getElementById('clMiniHupRatio');
+    const clMiniRateElem = document.getElementById('clMiniWinRate');
+    const clMiniDotsGrid = document.getElementById('clMiniDots');
+    if (clMiniHupElem) clMiniHupElem.innerText = `${clHup}/${last10.length || 0} Húp`;
+    if (clMiniRateElem) clMiniRateElem.innerText = `${clRate}%`;
+    if (clMiniDotsGrid) {
+        clMiniDotsGrid.innerHTML = '';
+        for (let i = 0; i < emptyCount; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'mini-dot dot-empty';
+            dot.innerText = '-';
+            clMiniDotsGrid.appendChild(dot);
+        }
+        last10.forEach(r => {
+            const isWin = r.statusCl === 'Húp';
+            const dot = document.createElement('div');
+            dot.className = `mini-dot ${isWin ? 'dot-hup' : 'dot-gay'}`;
+            dot.innerText = isWin ? 'H' : 'G';
+            dot.title = `Kỳ ${r.period}: AI đoán ${r.predCl} ➔ Ra ${r.actualCl} (${isWin ? 'HÚP ✓' : 'GÃY ✗'})`;
+            clMiniDotsGrid.appendChild(dot);
+        });
+    }
 
     if (clBadgesGrid) {
         clBadgesGrid.innerHTML = '';
@@ -1893,41 +2669,41 @@ function update10RoundStats() {
     renderTierBadges(cham4BadgesGrid, tierData.tier4, 'TOP 4 (% Thứ 4)');
     renderTierBadges(cham5BadgesGrid, tierData.tier5, 'TOP 5 (% Thứ 5)');
 
-    // Streaks
-    if (STATE.rounds.length > 0) {
-        const lastTxHup = STATE.rounds[STATE.rounds.length - 1].statusTx === 'Húp';
+    // Streaks (evaluated on playable rounds)
+    if (playableRounds.length > 0) {
+        const lastTxHup = playableRounds[playableRounds.length - 1].statusTx === 'Húp';
         let txStreak = 0;
-        for (let j = STATE.rounds.length - 1; j >= 0; j--) {
-            if ((STATE.rounds[j].statusTx === 'Húp') === lastTxHup) txStreak++;
+        for (let j = playableRounds.length - 1; j >= 0; j--) {
+            if ((playableRounds[j].statusTx === 'Húp') === lastTxHup) txStreak++;
             else break;
         }
         if (txStreakElem) {
             txStreakElem.innerHTML = lastTxHup ? `<span class="text-green">Đang Húp ${txStreak} tay</span>` : `<span class="text-red">Gãy ${txStreak} tay</span>`;
         }
 
-        const lastClHup = STATE.rounds[STATE.rounds.length - 1].statusCl === 'Húp';
+        const lastClHup = playableRounds[playableRounds.length - 1].statusCl === 'Húp';
         let clStreak = 0;
-        for (let j = STATE.rounds.length - 1; j >= 0; j--) {
-            if ((STATE.rounds[j].statusCl === 'Húp') === lastClHup) clStreak++;
+        for (let j = playableRounds.length - 1; j >= 0; j--) {
+            if ((playableRounds[j].statusCl === 'Húp') === lastClHup) clStreak++;
             else break;
         }
         if (clStreakElem) {
             clStreakElem.innerHTML = lastClHup ? `<span class="text-green">Đang Húp ${clStreak} tay</span>` : `<span class="text-red">Gãy ${clStreak} tay</span>`;
         }
 
-        const lastChamHit = STATE.rounds[STATE.rounds.length - 1].isChamHit;
+        const lastChamHit = playableRounds[playableRounds.length - 1].isChamHit;
         let chamStreak = 0;
-        for (let j = STATE.rounds.length - 1; j >= 0; j--) {
-            if (STATE.rounds[j].isChamHit === lastChamHit) chamStreak++;
+        for (let j = playableRounds.length - 1; j >= 0; j--) {
+            if (playableRounds[j].isChamHit === lastChamHit) chamStreak++;
             else break;
         }
         if (chamStreakElem) {
             chamStreakElem.innerHTML = lastChamHit ? `<span class="text-green">Đang Trúng ${chamStreak} tay</span>` : `<span class="text-red">Trượt ${chamStreak} tay</span>`;
         }
     } else {
-        if (txStreakElem) txStreakElem.innerText = '--';
-        if (clStreakElem) clStreakElem.innerText = '--';
-        if (chamStreakElem) chamStreakElem.innerText = '--';
+        if (txStreakElem) txStreakElem.innerHTML = '<span class="text-dim">Chờ Kỳ 6</span>';
+        if (clStreakElem) clStreakElem.innerHTML = '<span class="text-dim">Chờ Kỳ 6</span>';
+        if (chamStreakElem) chamStreakElem.innerHTML = '<span class="text-dim">Chờ Kỳ 6</span>';
     }
 }
 
@@ -2037,7 +2813,7 @@ function updateHistoryTable() {
         if (titleElem) titleElem.innerText = 'KẾT QUẢ 10 KỲ QUAY GẦN NHẤT';
         tbody.innerHTML = `
             <tr>
-                <td colspan="11" class="empty-table-msg">
+                <td colspan="12" class="empty-table-msg">
                     <i class="fa-solid fa-inbox"></i> Chưa có dữ liệu kỳ quay nào. Hãy nhập kỳ đầu tiên ở trên hoặc bấm "Mẫu 25 kỳ" để thử nghiệm!
                 </td>
             </tr>
@@ -2063,6 +2839,8 @@ function updateHistoryTable() {
         // Find actual index in original STATE.rounds for delete button
         const actualIndex = STATE.rounds.findIndex(item => item.period === r.period);
         const isLatest = revIndex === 0; // Topmost row is the newest
+        const isWarmup = r.isWarmup || (actualIndex >= 0 && actualIndex < 5);
+        const warmupNum = r.warmupNum || (actualIndex + 1);
         
         // 5 digit balls
         const ballsHtml = r.digits.map(d => `<span class="digit-ball">${d}</span>`).join('');
@@ -2073,9 +2851,14 @@ function updateHistoryTable() {
         const actualTag = `<div style="display:flex;gap:4px;justify-content:center;"><span class="badge-tag-tx ${txClass}">Ra ${r.actualTx}</span><span class="badge-tag-tx ${clClass}">Ra ${r.actualCl}</span></div>`;
 
         // Tag prediction TX / CL
-        const predTxClass = r.predTx === 'Tài' ? 'tag-tai' : 'tag-xiu';
-        const predClClass = r.predCl === 'Chẵn' ? 'tag-chan' : 'tag-le';
-        const predTag = `<div style="display:flex;gap:4px;justify-content:center;"><span class="badge-tag-tx ${predTxClass}">Đoán: ${r.predTx}</span><span class="badge-tag-tx ${predClClass}">Đoán: ${r.predCl}</span></div>`;
+        let predTag = '';
+        if (isWarmup) {
+            predTag = `<div style="display:flex;gap:4px;justify-content:center;"><span class="badge-tag-tx" style="background:rgba(255,255,255,0.06); color:var(--text-dim); border:1px dashed rgba(255,255,255,0.2);">Mốc Gốc</span></div>`;
+        } else {
+            const predTxClass = r.predTx === 'Tài' ? 'tag-tai' : 'tag-xiu';
+            const predClClass = r.predCl === 'Chẵn' ? 'tag-chan' : 'tag-le';
+            predTag = `<div style="display:flex;gap:4px;justify-content:center;"><span class="badge-tag-tx ${predTxClass}">Đoán: ${r.predTx}</span><span class="badge-tag-tx ${predClClass}">Đoán: ${r.predCl}</span></div>`;
+        }
 
         // Pred Cham tags (Top 5 Chạm ordered by %: Top 1..5)
         const defaultCham = [9, 4, 2, 7, 0];
@@ -2084,40 +2867,56 @@ function updateHistoryTable() {
         const tierClasses = ['tier-gold', 'tier-silver', 'tier-bronze', 'tier-top4', 'tier-top5'];
 
         let predChamTag = '<div class="table-cham-tiers">';
-        for (let t = 0; t < 5; t++) {
-            const digit = (chamArr[t] !== undefined) ? chamArr[t] : defaultCham[t];
-            const prob = (r.predChamList && r.predChamList[t]) ? r.predChamList[t].prob : defaultProb[t];
-            predChamTag += `<span class="pill-cham-tier ${tierClasses[t]}" title="Top ${t+1} (${prob}%)">C.${digit} <small>(${prob}%)</small></span>`;
+        if (isWarmup) {
+            predChamTag += `<span class="pill-cham-tier" style="opacity:0.6; background:rgba(255,255,255,0.05); color:var(--text-dim); border-style:dashed;">Cầu Khởi Tạo</span>`;
+        } else {
+            for (let t = 0; t < 5; t++) {
+                const digit = (chamArr[t] !== undefined) ? chamArr[t] : defaultCham[t];
+                const prob = (r.predChamList && r.predChamList[t]) ? r.predChamList[t].prob : defaultProb[t];
+                predChamTag += `<span class="pill-cham-tier ${tierClasses[t]}" title="Top ${t+1} (${prob}%)">C.${digit} <small>(${prob}%)</small></span>`;
+            }
         }
         predChamTag += '</div>';
 
-        // Đối soát TX & CL: HÚP MÀU XANH, GÃY MÀU ĐỎ kèm chi tiết Đoán vs Ra
-        const txStatusBadge = r.statusTx === 'Húp'
-            ? `<span class="status-pill-hup" title="Đoán đúng ${r.predTx}"><i class="fa-solid fa-check"></i> HÚP (${r.predTx})</span>`
-            : `<span class="status-pill-gay" title="Đoán ${r.predTx} nhưng ra ${r.actualTx}"><i class="fa-solid fa-xmark"></i> GÃY (Đoán ${r.predTx} ➔ Ra ${r.actualTx})</span>`;
+        // Đối soát TX & CL
+        let txStatusBadge = '';
+        let clStatusBadge = '';
+        if (isWarmup) {
+            txStatusBadge = `<span class="status-pill-warmup" title="5 kỳ kết quả đầu tiên làm mốc dữ liệu gốc"><i class="fa-solid fa-seedling"></i> Mốc Gốc</span>`;
+            clStatusBadge = `<span class="status-pill-warmup" title="5 kỳ kết quả đầu tiên làm mốc dữ liệu gốc"><i class="fa-solid fa-seedling"></i> Mốc Gốc</span>`;
+        } else {
+            txStatusBadge = r.statusTx === 'Húp'
+                ? `<span class="status-pill-hup" title="Đoán đúng ${r.predTx}"><i class="fa-solid fa-check"></i> HÚP (${r.predTx})</span>`
+                : `<span class="status-pill-gay" title="Đoán ${r.predTx} nhưng ra ${r.actualTx}"><i class="fa-solid fa-xmark"></i> GÃY (Đoán ${r.predTx} ➔ Ra ${r.actualTx})</span>`;
 
-        const clStatusBadge = r.statusCl === 'Húp'
-            ? `<span class="status-pill-hup" title="Đoán đúng ${r.predCl}"><i class="fa-solid fa-check"></i> HÚP (${r.predCl})</span>`
-            : `<span class="status-pill-gay" title="Đoán ${r.predCl} nhưng ra ${r.actualCl}"><i class="fa-solid fa-xmark"></i> GÃY (Đoán ${r.predCl} ➔ Ra ${r.actualCl})</span>`;
-
-        // Đối soát 5 Chạm: TRÚNG MÀU XANH, TRƯỢT MÀU ĐỎ kèm chi tiết từng Chạm
-        const hitArr = chamArr.filter(c => r.digits.includes(c));
-        const isDanHit = hitArr.length > 0;
-        let miniHitsHtml = '';
-        for (let t = 0; t < 5; t++) {
-            const digit = (chamArr[t] !== undefined) ? chamArr[t] : defaultCham[t];
-            const hit = r.digits.includes(digit);
-            miniHitsHtml += `<span class="status-mini-cham ${hit ? 'cham-hit' : 'cham-miss'}" title="Top ${t+1} Chạm ${digit}">T${t+1}:${hit ? '✓' : '✗'}</span>`;
+            clStatusBadge = r.statusCl === 'Húp'
+                ? `<span class="status-pill-hup" title="Đoán đúng ${r.predCl}"><i class="fa-solid fa-check"></i> HÚP (${r.predCl})</span>`
+                : `<span class="status-pill-gay" title="Đoán ${r.predCl} nhưng ra ${r.actualCl}"><i class="fa-solid fa-xmark"></i> GÃY (Đoán ${r.predCl} ➔ Ra ${r.actualCl})</span>`;
         }
 
-        const chamStatusBadge = `
-            <div class="table-cham-results">
-                ${isDanHit ? `<span class="status-pill-trung"><i class="fa-solid fa-check"></i> TRÚNG [${hitArr.join(',')}]</span>` : `<span class="status-pill-truot"><i class="fa-solid fa-xmark"></i> TRƯỢT</span>`}
-                <div style="display:flex; gap:2px; margin-top:2px; flex-wrap:wrap; justify-content:center;">
-                    ${miniHitsHtml}
+        // Đối soát 5 Chạm
+        let chamStatusBadge = '';
+        if (isWarmup) {
+            chamStatusBadge = `<div class="table-cham-results"><span class="status-pill-warmup"><i class="fa-solid fa-seedling"></i> Mốc Gốc</span></div>`;
+        } else {
+            const hitArr = chamArr.filter(c => r.digits.includes(c));
+            const isDanHit = hitArr.length > 0;
+            let miniHitsHtml = '';
+            for (let t = 0; t < 5; t++) {
+                const digit = (chamArr[t] !== undefined) ? chamArr[t] : defaultCham[t];
+                const hit = r.digits.includes(digit);
+                miniHitsHtml += `<span class="status-mini-cham ${hit ? 'cham-hit' : 'cham-miss'}" title="Top ${t+1} Chạm ${digit}">T${t+1}:${hit ? '✓' : '✗'}</span>`;
+            }
+
+            chamStatusBadge = `
+                <div class="table-cham-results">
+                    ${isDanHit ? `<span class="status-pill-trung"><i class="fa-solid fa-check"></i> TRÚNG [${hitArr.join(',')}]</span>` : `<span class="status-pill-truot"><i class="fa-solid fa-xmark"></i> TRƯỢT</span>`}
+                    <div style="display:flex; gap:2px; margin-top:2px; flex-wrap:wrap; justify-content:center;">
+                        ${miniHitsHtml}
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
 
         // Đối soát Tiền Nhị & Hậu Nhị (25 số phức hợp)
         const tienVal = `${r.digits[0]}${r.digits[1]}`;
@@ -2126,24 +2925,43 @@ function updateHistoryTable() {
         const hauVal = `${r.digits[3]}${r.digits[4]}`;
         const isHauHit = (r.isHauNhiHit !== undefined) ? r.isHauNhiHit : (chamArr.includes(r.digits[3]) && chamArr.includes(r.digits[4]));
 
-        const nhiStatusBadge = `
-            <div class="table-nhi-results">
-                <span class="status-nhi-pill ${isTienHit ? 'nhi-hit' : 'nhi-miss'}" title="Tiền Nhị (2 số đầu): ${tienVal}">
-                    Tiền [${tienVal}]: ${isTienHit ? 'HÚP ✓' : 'GÃY ✗'}
-                </span>
-                <span class="status-nhi-pill ${isHauHit ? 'nhi-hit' : 'nhi-miss'}" title="Hậu Nhị (2 số đuôi): ${hauVal}">
-                    Hậu [${hauVal}]: ${isHauHit ? 'HÚP ✓' : 'GÃY ✗'}
-                </span>
-            </div>
-        `;
+        let nhiStatusBadge = '';
+        if (isWarmup) {
+            nhiStatusBadge = `
+                <div class="table-nhi-results">
+                    <span class="status-nhi-pill" style="background:rgba(6,182,212,0.12); color:#38bdf8; border-color:rgba(6,182,212,0.3); font-size:0.75rem;">
+                        <i class="fa-solid fa-seedling"></i> Mốc Gốc (Chưa vào tiền)
+                    </span>
+                </div>
+            `;
+        } else {
+            nhiStatusBadge = `
+                <div class="table-nhi-results">
+                    <span class="status-nhi-pill ${isTienHit ? 'nhi-hit' : 'nhi-miss'}" title="Tiền Nhị (2 số đầu): ${tienVal}">
+                        Tiền [${tienVal}]: ${isTienHit ? 'HÚP ✓' : 'GÃY ✗'}
+                    </span>
+                    <span class="status-nhi-pill ${isHauHit ? 'nhi-hit' : 'nhi-miss'}" title="Hậu Nhị (2 số đuôi): ${hauVal}">
+                        Hậu [${hauVal}]: ${isHauHit ? 'HÚP ✓' : 'GÃY ✗'}
+                    </span>
+                </div>
+            `;
+        }
 
-        const latestBadge = isLatest 
-            ? `<span class="badge-new-entry"><span class="pulse-dot-sm"></span> Vừa nhập</span>` 
-            : '';
+        let periodCellHtml = '';
+        if (isWarmup) {
+            periodCellHtml = `<span class="text-cyan">${r.period}</span> <span class="status-pill-warmup" style="font-size:0.65rem; padding:1px 6px; margin-left:4px;"><i class="fa-solid fa-seedling"></i> Gốc #${warmupNum}/5</span>`;
+        } else {
+            const latestBadge = isLatest ? `<span class="badge-new-entry"><span class="pulse-dot-sm"></span> Vừa nhập</span>` : '';
+            periodCellHtml = `${r.period} ${latestBadge}`;
+        }
+
+        const patternDisplay = isWarmup 
+            ? `<strong style="color:#38bdf8;"><i class="fa-solid fa-seedling"></i> Mốc Gốc Khởi Tạo #${warmupNum}/5</strong>` 
+            : `<strong>${r.bridgePattern}</strong>`;
 
         rowsHtml += `
             <tr class="${isLatest ? 'row-latest-entry' : ''}">
-                <td class="period-cell">${r.period} ${latestBadge}</td>
+                <td class="period-cell">${periodCellHtml}</td>
                 <td><div class="digit-ball-group">${ballsHtml}</div></td>
                 <td class="sum-detail">
                     <strong>${r.detailText}</strong>
@@ -2157,7 +2975,7 @@ function updateHistoryTable() {
                 <td>${chamStatusBadge}</td>
                 <td>${nhiStatusBadge}</td>
                 <td style="font-size: 0.8rem; color: var(--cyan-glow); text-align: left; max-width: 180px;">
-                    <strong>${r.bridgePattern}</strong>
+                    ${patternDisplay}
                 </td>
                 <td>
                     <button class="btn-del-row" onclick="deleteSpecificRound(${actualIndex >= 0 ? actualIndex : 0})" title="Xóa kỳ này">
@@ -2273,7 +3091,11 @@ function saveToLocalStorage() {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
             rounds: STATE.rounds,
-            calcMode: STATE.calcMode
+            calcMode: STATE.calcMode,
+            capital: STATE.capital,
+            safeFrames: STATE.safeFrames,
+            betStrategy: STATE.betStrategy,
+            payoutRate: STATE.payoutRate
         }));
     } catch (e) {
         console.error('Failed to save to localStorage', e);
@@ -2287,8 +3109,25 @@ function loadFromLocalStorage() {
             const parsed = JSON.parse(saved);
             STATE.rounds = parsed.rounds || [];
             STATE.calcMode = parsed.calcMode || 'sum5';
+            if (parsed.capital !== undefined) STATE.capital = Number(parsed.capital) || 30000000;
+            if (parsed.safeFrames !== undefined) STATE.safeFrames = Number(parsed.safeFrames) || 5;
+            // Luôn ưu tiên mặc định 'dual' (Cả 2 đầu: 50 số Tiền Nhị & Hậu Nhị)
+            STATE.betStrategy = (parsed.betStrategy && parsed.betStrategy === 'single') ? 'dual' : (parsed.betStrategy || 'dual');
+            if (parsed.payoutRate !== undefined) STATE.payoutRate = Number(parsed.payoutRate) || 99;
+
             const selectElem = document.getElementById('calcModeSelect');
             if (selectElem) selectElem.value = STATE.calcMode;
+
+            const capInput = document.getElementById('capitalInput');
+            if (capInput) capInput.value = STATE.capital.toLocaleString('vi-VN');
+
+            const safeSelect = document.getElementById('safeFramesSelect');
+            if (safeSelect) safeSelect.value = String(STATE.safeFrames);
+
+            const stratSelect = document.getElementById('betStrategySelect');
+            if (stratSelect) stratSelect.value = STATE.betStrategy;
+
+            updateQuickCapButtons(STATE.capital);
         }
     } catch (e) {
         console.error('Failed to load from localStorage', e);
@@ -2333,3 +3172,15 @@ function importData(event) {
     reader.readAsText(file);
     event.target.value = '';
 }
+
+/* ==========================================================================
+   PWA SERVICE WORKER REGISTRATION
+   ========================================================================== */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('PWA ServiceWorker registered with scope:', reg.scope))
+            .catch(err => console.log('PWA ServiceWorker registration failed:', err));
+    });
+}
+
