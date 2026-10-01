@@ -57,6 +57,9 @@ Từ 5 chạm được điểm cao nhất ➔ Ghép thành **Dàn 25 số VIP ba
     - Thanh so sánh tỷ lệ kép trực quan (Dual Progress Bar: Tiền % vs Hậu %).
     - Huy hiệu nhận định xu hướng & Lời khuyên phân bổ vốn: Nhận biết tự động dòng cầu đang **THIÊN VỀ HẬU NHỊ**, **THIÊN VỀ TIỀN NHỊ** hay **CÂN BẰNG 2 ĐẦU**.
   - Danh sách từng khung đã qua dạng Grid ngang: Tay 1, Tay 2, Tay 3 hiển thị đồng thời, không bị che khuất trên mobile.
+- **Khối Hiển Thị Nhanh Kỳ Trước Vừa Ra (`last-round-quick-banner` & `last-round-mini-inline`):**
+  - Tích hợp ngay trong Thẻ Nhập Kết Quả (`card-input`), hiển thị tức thì kỳ vừa nhập: Số Kỳ, 5 Viên Bi Số phát sáng, Tổng điểm, Kết quả Tài/Xỉu/Chẵn/Lẻ, Tiền Nhị/Hậu Nhị và Trạng thái Húp/Gãy.
+  - Giúp người dùng quan sát ngay kết quả kỳ trước mà không cần cuộn trang xuống dưới.
 
 ---
 

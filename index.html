@@ -18,7 +18,7 @@
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="apple-touch-icon" href="icon.svg">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=4.7">
+    <link rel="stylesheet" href="style.css?v=4.8">
 </head>
 <body>
     <div class="app-container">
@@ -454,6 +454,17 @@
                         <span class="rule-hint" id="modeRuleHint">Quy ước: Tổng ≥ 23 Tài, ≤ 22 Xỉu</span>
                     </div>
 
+                    <!-- DÒNG THỂ HIỆN KẾT QUẢ KỲ TRƯỚC VỪA NHẬP -->
+                    <div class="last-round-quick-banner" id="lastRoundQuickBanner">
+                        <div class="last-round-banner-left">
+                            <span class="last-round-tag"><i class="fa-solid fa-clock-rotate-left text-gold"></i> KỲ TRƯỚC VỪA RA:</span>
+                            <span class="last-round-period-badge" id="lastRoundPeriodBadge">Chưa có dữ liệu</span>
+                        </div>
+                        <div class="last-round-banner-right" id="lastRoundDetailsDisplay">
+                            <span class="text-dim"><i class="fa-solid fa-inbox"></i> Nhập kết quả kỳ đầu tiên để bắt đầu</span>
+                        </div>
+                    </div>
+
                     <form id="resultForm" onsubmit="handleFormSubmit(event)">
                         <div class="single-input-row">
                             <!-- Kỳ quay -->
@@ -464,7 +475,10 @@
 
                             <!-- Ô nhập 5 số liền nhau -->
                             <div class="form-group digit5-group">
-                                <label for="digit5Input"><i class="fa-solid fa-calculator"></i> Kết quả 5 số (Gõ liền nhau, ấn Enter để soi tiếp)</label>
+                                <div class="digit5-label-row">
+                                    <label for="digit5Input"><i class="fa-solid fa-calculator"></i> Kết quả 5 số (Gõ liền nhau, ấn Enter để soi tiếp)</label>
+                                    <span class="last-round-mini-inline" id="lastRoundMiniInline"><i class="fa-solid fa-clock-rotate-left text-gold"></i> Vừa ra: <b class="text-white" id="lastRoundMiniVal">--</b></span>
+                                </div>
                                 <div class="digit5-input-wrapper">
                                     <i class="fa-solid fa-dice-five input-icon"></i>
                                     <input type="text" 
@@ -754,6 +768,6 @@
     </div>
 
     <!-- SOUND EFFECTS (OPTIONAL / WEB AUDIO API) -->
-    <script src="app.js?v=4.7"></script>
+    <script src="app.js?v=4.8"></script>
 </body>
 </html>

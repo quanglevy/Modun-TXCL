@@ -1569,11 +1569,88 @@ function updateCapitalUI() {
 
 function updateAllViews() {
     updatePredictionCard();
+    updateLastRoundDisplay();
     updateFrameUI();
     updateCapitalUI();
     update10RoundStats();
     updateRoadmap();
     updateHistoryTable();
+}
+
+/**
+ * Render Quick Display for the Previous Round (Kỳ trước vừa ra) right in the input card
+ */
+function updateLastRoundDisplay() {
+    const banner = document.getElementById('lastRoundQuickBanner');
+    const periodBadge = document.getElementById('lastRoundPeriodBadge');
+    const detailsDisplay = document.getElementById('lastRoundDetailsDisplay');
+    const miniInlineVal = document.getElementById('lastRoundMiniVal');
+
+    if (!banner || !detailsDisplay) return;
+
+    if (STATE.rounds.length === 0) {
+        if (periodBadge) periodBadge.innerText = 'Chưa có dữ liệu';
+        detailsDisplay.innerHTML = `<span class="text-dim"><i class="fa-solid fa-inbox"></i> Nhập kết quả kỳ đầu tiên để bắt đầu</span>`;
+        if (miniInlineVal) miniInlineVal.innerText = '--';
+        return;
+    }
+
+    const last = STATE.rounds[STATE.rounds.length - 1];
+    const actualIndex = STATE.rounds.length - 1;
+    const isWarmup = last.isWarmup || (actualIndex < 5);
+    const warmupNum = last.warmupNum || (actualIndex + 1);
+
+    if (periodBadge) {
+        periodBadge.innerHTML = `<i class="fa-solid fa-flag-checkered text-gold"></i> ${last.period}`;
+    }
+
+    // 5 balls
+    const ballsHtml = last.digits.map(d => `<span class="last-round-ball">${d}</span>`).join('');
+
+    // TX / CL badges
+    const txClass = last.actualTx === 'Tài' ? 'tag-tai' : 'tag-xiu';
+    const clClass = last.actualCl === 'Chẵn' ? 'tag-chan' : 'tag-le';
+    const txClHtml = `
+        <span class="badge-tag-tx ${txClass}" style="font-size:0.76rem; padding:2px 8px;">Ra ${last.actualTx}</span>
+        <span class="badge-tag-tx ${clClass}" style="font-size:0.76rem; padding:2px 8px;">Ra ${last.actualCl}</span>
+    `;
+
+    // Tiền / Hậu Nhị
+    const tienVal = `${last.digits[0]}${last.digits[1]}`;
+    const hauVal = `${last.digits[3]}${last.digits[4]}`;
+    const nhiHtml = `
+        <span class="last-round-nhi-pill" title="2 số đầu (Tiền Nhị)">Tiền: <b>${tienVal}</b></span>
+        <span class="last-round-nhi-pill" title="2 số đuôi (Hậu Nhị)">Hậu: <b>${hauVal}</b></span>
+    `;
+
+    // Status Pill
+    let statusHtml = '';
+    if (isWarmup) {
+        statusHtml = `<span class="status-pill-warmup" style="font-size:0.72rem; padding:2px 8px;"><i class="fa-solid fa-seedling"></i> Mốc Gốc #${warmupNum}/5</span>`;
+    } else {
+        const isTxHup = last.statusTx === 'Húp';
+        const isClHup = last.statusCl === 'Húp';
+        const isDanHup = last.isUnified25Hit;
+        statusHtml = `
+            <span class="${isTxHup ? 'status-pill-hup' : 'status-pill-gay'}" style="font-size:0.72rem; padding:2px 8px;">${isTxHup ? 'TX ✓' : 'TX ✗'}</span>
+            <span class="${isClHup ? 'status-pill-hup' : 'status-pill-gay'}" style="font-size:0.72rem; padding:2px 8px;">${isClHup ? 'CL ✓' : 'CL ✗'}</span>
+            <span class="${isDanHup ? 'status-pill-trung' : 'status-pill-truot'}" style="font-size:0.72rem; padding:2px 8px;">${isDanHup ? 'Dàn 25 ✓' : 'Dàn 25 ✗'}</span>
+        `;
+    }
+
+    detailsDisplay.innerHTML = `
+        <div class="last-round-balls-wrap">
+            ${ballsHtml}
+        </div>
+        <span class="last-round-sum-pill">Tổng <b>${last.sum}</b></span>
+        ${txClHtml}
+        ${nhiHtml}
+        ${statusHtml}
+    `;
+
+    if (miniInlineVal) {
+        miniInlineVal.innerHTML = `${last.period} [<b>${last.digits.join('')}</b> ➔ ${last.actualTx} - ${last.actualCl}]`;
+    }
 }
 
 /**
