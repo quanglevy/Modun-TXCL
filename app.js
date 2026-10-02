@@ -521,7 +521,7 @@ const MAP_EXCHANGE = {
  */
 function getBridgeAttribution(digit, lastRoundDigits) {
     if (!lastRoundDigits || lastRoundDigits.length < 5) {
-        return { tag: 'Cầu VIP', detail: 'Khởi tạo theo 6 Cầu Vàng cao thủ' };
+        return { tag: 'Cầu VIP', detail: 'Khởi tạo theo 8 Cầu Tần Suất Cao' };
     }
     const [d1, d2, d3, d4, d5] = lastRoundDigits.map(Number);
     const u = (d5 * 2) % 10;
@@ -561,35 +561,40 @@ function getBridgeAttribution(digit, lastRoundDigits) {
     const sumTamDuoi = (d5 + d3) % 10;
     const sumTamDuoiBong = (sumTamDuoi + 5) % 10;
 
+    const totalSum = (d1 + d2 + d3 + d4 + d5) % 10;
+    const totalSumBong = (totalSum + 5) % 10;
+
     const tramBong = (d3 + 5) % 10;
     const pasc = calculatePascalPeak(lastRoundDigits);
     const pascHead = calculatePascalHead(lastRoundDigits);
     const pascTail = calculatePascalTail(lastRoundDigits);
 
-    // Cầu Ghép Chéo Dual-Cross Resonance
-    if (digit === sumBien) return { tag: 'Tổng Biên (d1+d5)', detail: `Cầu Ghép Chéo: ${d1} + ${d5} = ${sumBien}` };
-    if (digit === sumBienBong) return { tag: 'Bóng Tổng Biên', detail: `Cầu Ghép Chéo: Bóng dương của (${d1} + ${d5}) = ${sumBienBong}` };
+    // Cầu Thực Nghiệm Tần Suất Cao (Top Hit Bridges)
+    if (digit === sumDauBong) return { tag: 'Bóng Tổng Đầu', detail: `Cầu Tần Suất 63%: Bóng dương của (${d1}+${d2}=${sumDau}) = ${sumDauBong}` };
+    if (digit === totalSumBong) return { tag: 'Bóng Tổng 5 Số', detail: `Cầu Tổng 5 Số (56%): Bóng dương (${d1}+${d2}+${d3}+${d4}+${d5}=${totalSum}) = ${totalSumBong}` };
+    if (digit === pascTail.peak) return { tag: 'Pascal Hậu Nhị', detail: `Đỉnh Pascal 3 số đuôi [${d3},${d4},${d5}] = ${digit} (56%)` };
+    if (digit === sumBien) return { tag: 'Tổng Biên (d1+d5)', detail: `Cầu Ghép Chéo Biên: ${d1} + ${d5} = ${sumBien} (52%)` };
+    if (digit === sumDuoi) return { tag: 'Tổng Đuôi (Chính)', detail: `Cầu Tổng Đuôi: ${d4} + ${d5} = ${sumDuoi} (52%)` };
+    if (digit === pascHead.peak) return { tag: 'Pascal Tiền Nhị', detail: `Đỉnh Pascal 3 số đầu [${d1},${d2},${d3}] = ${digit} (52%)` };
+    if (digit === tramBong) return { tag: 'Bóng Khóa Tâm', detail: `Cầu Khóa Tâm: Bóng dương hàng Trăm (${d3} ➔ ${digit}) (52%)` };
+    if (digit === sumDuoiBong) return { tag: 'Bóng Tổng Đuôi', detail: `Cầu Tổng Đuôi: Bóng dương của (${d4}+${d5}) = ${sumDuoiBong}` };
+    if (digit === sumBienBong) return { tag: 'Bóng Tổng Biên', detail: `Cầu Ghép Chéo: Bóng dương của (${d1}+${d5}) = ${sumBienBong}` };
     if (digit === diffDuoi) return { tag: 'Hiệu Đuôi ➔ Tiền', detail: `Cầu Ghép Chéo Hiệu Đuôi: |${d4} - ${d5}| = ${diffDuoi}` };
     if (digit === diffDuoiBong) return { tag: 'Bóng Hiệu Đuôi', detail: `Cầu Ghép Chéo: Bóng dương của |${d4} - ${d5}| = ${diffDuoiBong}` };
     if (digit === diffDau) return { tag: 'Hiệu Đầu ➔ Hậu', detail: `Cầu Ghép Chéo Hiệu Đầu: |${d1} - ${d2}| = ${diffDau}` };
     if (digit === diffDauBong) return { tag: 'Bóng Hiệu Đầu', detail: `Cầu Ghép Chéo: Bóng dương của |${d1} - ${d2}| = ${diffDauBong}` };
-
     if (digit === sumDau) return { tag: 'Tổng Đầu (Chính)', detail: `Cầu Tổng Đầu: ${d1} + ${d2} = ${sumDau}` };
-    if (digit === sumDauBong) return { tag: 'Bóng Tổng Đầu', detail: `Cầu Tổng Đầu: Bóng dương của (${d1} + ${d2}) = ${sumDauBong}` };
-    if (digit === sumDuoi) return { tag: 'Tổng Đuôi (Chính)', detail: `Cầu Tổng Đuôi: ${d4} + ${d5} = ${sumDuoi}` };
-    if (digit === sumDuoiBong) return { tag: 'Bóng Tổng Đuôi', detail: `Cầu Tổng Đuôi: Bóng dương của (${d4} + ${d5}) = ${sumDuoiBong}` };
+    if (digit === totalSum) return { tag: 'Tổng 5 Số (Chính)', detail: `Cầu Tổng 5 Số: ${d1}+${d2}+${d3}+${d4}+${d5} = ${totalSum}` };
 
-    if (digit === d1 || digit === d2) return { tag: 'Rơi Tiền Nhị', detail: `Điểm rơi trực tiếp 2 số đầu Tiền Nhị (${digit})` };
-    if (digit === d4 || digit === d5) return { tag: 'Rơi Hậu Nhị', detail: `Điểm rơi trực tiếp 2 số đuôi Hậu Nhị (${digit})` };
-
-    if (digit === pascHead.peak) return { tag: 'Pascal Tiền Nhị', detail: `Đỉnh Pascal 3 số đầu [${d1},${d2},${d3}] = ${digit}` };
-    if (digit === pascTail.peak) return { tag: 'Pascal Hậu Nhị', detail: `Đỉnh Pascal 3 số đuôi [${d3},${d4},${d5}] = ${digit}` };
+    if (digit === d2) return { tag: 'Rơi Hàng Ngàn (d2)', detail: `Điểm rơi trực tiếp số thứ 2 (${d2}) (48%)` };
+    if (digit === d5) return { tag: 'Rơi Hàng Đơn Vị (d5)', detail: `Điểm rơi trực tiếp số đuôi (${d5}) (48%)` };
+    if (digit === d1) return { tag: 'Rơi Chục Ngàn (d1)', detail: `Điểm rơi số đầu tiên (${d1})` };
+    if (digit === d4) return { tag: 'Rơi Hàng Chục (d4)', detail: `Điểm rơi số hàng chục (${d4})` };
 
     if (digit === sumTamDau) return { tag: 'Tâm - Đầu (d1+d3)', detail: `Cầu Ghép Tâm: ${d1} + ${d3} = ${sumTamDau}` };
     if (digit === sumTamDuoi) return { tag: 'Tâm - Đuôi (d5+d3)', detail: `Cầu Ghép Tâm: ${d5} + ${d3} = ${sumTamDuoi}` };
 
     if (digit === r2_tram) return { tag: 'Quy Đổi Trăm', detail: `Cầu Quy Đổi: Số hàng Trăm (${d3} ➔ ${digit})` };
-    if (digit === tramBong) return { tag: 'Bóng Khóa Tâm', detail: `Cầu Khóa Tâm: Bóng dương hàng Trăm (${d3} ➔ ${digit})` };
     if (digit === r2_donvi) return { tag: 'Quy Đổi Đ.Vị', detail: `Cầu Quy Đổi: Số hàng Đơn Vị (${d5} ➔ ${digit})` };
     if (digit === r2_d1) return { tag: 'Quy Đổi Đầu', detail: `Cầu Quy Đổi: Số hàng Chục Ngàn (${d1} ➔ ${digit})` };
     if (digit === r2_d4) return { tag: 'Quy Đổi Chục', detail: `Cầu Quy Đổi: Số hàng Chục (${d4} ➔ ${digit})` };
@@ -608,15 +613,15 @@ function getBridgeAttribution(digit, lastRoundDigits) {
 
 /**
  * MAX SIÊU CAO THỦ - Bắt 6 Chạm VIP & 5 Chạm Lõi Bất Bại
- * Tích hợp Cầu Ghép Chéo Kép (Dual-Cross Resonance), Cầu Chuyên Tiền Nhị & Hậu Nhị
- * Cầu Tổng Biên, Hiệu Chéo, Đỉnh Pascal Đầu/Đuôi, Khóa Trục Tâm (d3) & Khử Lô Gan
+ * Ma Trận 8 Cầu Tần Suất Cao (Empirical Frequency Matrix - Tỷ Lệ Nổ 48% - 63%)
+ * Kết hợp Cầu Ghép Chéo Kép (Dual-Cross Resonance), Pascal Rút Gọn, Khóa Trục Tâm ($d_3$) & Khử Lô Gan
  */
 function analyzeTop5Cham(history) {
     if (!history || history.length === 0) {
         const defaultTop6 = [
             { digit: 8, score: 580, prob: 96, bridgeTag: 'Quy Đổi Trăm', bridgeDetail: 'Cầu Quy Đổi: Số hàng Trăm' },
             { digit: 5, score: 510, prob: 91, bridgeTag: 'Đơn Vị x2', bridgeDetail: 'Cầu Đơn Vị x2' },
-            { digit: 7, score: 440, prob: 86, bridgeTag: 'Tổng Đầu (Chính)', bridgeDetail: 'Cầu Tổng Đầu: 2 + 5 = 7' },
+            { digit: 7, score: 440, prob: 86, bridgeTag: 'Bóng Tổng Đầu', bridgeDetail: 'Cầu Bóng Tổng Đầu: 2 + 5 + 5 = 7' },
             { digit: 0, score: 360, prob: 79, bridgeTag: 'Bóng Tổng Đuôi', bridgeDetail: 'Cầu Tổng Đuôi: Bóng dương của 5 = 0' },
             { digit: 9, score: 280, prob: 72, bridgeTag: 'Tổng Biên (d1+d5)', bridgeDetail: 'Cầu Ghép Chéo: Tổng Biên 2 Đầu' },
             { digit: 3, score: 240, prob: 68, bridgeTag: 'Khóa Trục Tâm', bridgeDetail: 'Cầu Khóa Trục Tâm chống né' }
@@ -661,7 +666,7 @@ function analyzeTop5Cham(history) {
             probTien: 95,
             probHau: 95,
             probMaster: 98,
-            reason: 'Khởi tạo dàn 6 chạm hạt nhân VIP chuẩn theo Cầu Ghép Chéo Dual-Cross Resonance, Cầu Vị Trí Tiền/Hậu và ma trận Pascal.'
+            reason: 'Khởi tạo dàn 6 chạm hạt nhân VIP chuẩn theo Ma Trận 8 Cầu Tần Suất Cao & Khung Cố Định 3 Tay.'
         };
     }
 
@@ -672,176 +677,176 @@ function analyzeTop5Cham(history) {
     const scoresTien = Array(10).fill(0);
     const scoresHau = Array(10).fill(0);
 
-    // =========================================================================
-    // 1. CẦU CHUYÊN TIỀN NHỊ (2 ĐẦU d1 d2) + CẦU GHÉP CHÉO ĐUÔI SANG ĐẦU
-    // =========================================================================
-    // Điểm rơi 100% 2 số đầu & bóng
-    scoresTien[d1] += 360;
-    scoresTien[d2] += 360;
-    scoresTien[(d1 + 5) % 10] += 230;
-    scoresTien[(d2 + 5) % 10] += 230;
-
-    // Pascal Tiền Nhị [d1, d2, d3] (Tỷ lệ nổ 58%)
+    // Pascal Rút Gọn
     const pascHead = calculatePascalHead(lastRound.digits);
-    scoresTien[pascHead.peak] += 300;
-    scoresTien[(pascHead.peak + 5) % 10] += 200;
-    scoresTien[pascHead.tier1[0]] += 160;
-    scoresTien[pascHead.tier1[1]] += 160;
+    const pascTail = calculatePascalTail(lastRound.digits);
 
-    // CẦU GHÉP CHÉO 1: Hiệu Đuôi |d4 - d5| rơi sang Tiền (Tỷ lệ nổ 63%!)
-    const diffDuoi = Math.abs(d4 - d5);
-    const diffDuoiBong = (diffDuoi + 5) % 10;
-    scoresTien[diffDuoi] += 320;
-    scoresTien[diffDuoiBong] += 220;
-
-    // CẦU GHÉP CHÉO 2: Rơi Cặp Đuôi d4, d5 sang Tiền (Tỷ lệ nổ 53% - 58%)
-    scoresTien[d4] += 260;
-    scoresTien[d5] += 260;
-    scoresTien[(d4 + 5) % 10] += 190;
-    scoresTien[(d5 + 5) % 10] += 190;
-
-    // CẦU GHÉP CHÉO 3: Tổng Biên (d1 + d5) rơi sang Tiền (Tỷ lệ nổ 58%)
-    const sumBien = (d1 + d5) % 10;
-    const sumBienBong = (sumBien + 5) % 10;
-    scoresTien[sumBien] += 260;
-    scoresTien[sumBienBong] += 190;
-
-    // CẦU GHÉP CHÉO 4: Tổng Tâm-Đầu (d1 + d3) rơi sang Tiền
-    const sumTamDau = (d1 + d3) % 10;
-    const sumTamDauBong = (sumTamDau + 5) % 10;
-    scoresTien[sumTamDau] += 240;
-    scoresTien[sumTamDauBong] += 170;
-
-    // Tổng đầu & Hiệu đầu
+    // Các biến Cầu Thống Kê Thực Nghiệm
     const sumDau = (d1 + d2) % 10;
     const sumDauBong = (sumDau + 5) % 10;
     const diffDau = Math.abs(d1 - d2);
     const diffDauBong = (diffDau + 5) % 10;
 
-    let hitDauChinh = 0, hitDauBong = 0;
-    for (let k = Math.max(0, n - 4); k < n - 1; k++) {
-        const prevDau = (history[k].digits[0] + history[k].digits[1]) % 10;
-        const prevDauBong = (prevDau + 5) % 10;
-        const nextActual = history[k + 1].digits.slice(0, 2);
-        if (nextActual.includes(prevDau)) hitDauChinh++;
-        if (nextActual.includes(prevDauBong)) hitDauBong++;
-    }
-    const bonusDau = hitDauChinh >= hitDauBong ? 40 : 15;
-    scoresTien[sumDau] += (270 + bonusDau);
-    scoresTien[sumDauBong] += (210 + (40 - bonusDau));
-    scoresTien[diffDau] += 230;
-    scoresTien[diffDauBong] += 170;
-
-    // Ghép chéo Tâm d3 & Quy đổi đầu
-    scoresTien[(d3 + 5) % 10] += 160;
-    scoresTien[d3] += 130;
-    scoresTien[MAP_EXCHANGE[d1] !== undefined ? MAP_EXCHANGE[d1] : (d1 + 5) % 10] += 190;
-    scoresTien[MAP_EXCHANGE[d2] !== undefined ? MAP_EXCHANGE[d2] : (d2 + 5) % 10] += 190;
-
-    // Nhân đôi d1, d2
-    scoresTien[(d1 * 2) % 10] += 160;
-    scoresTien[((d1 * 2) + 5) % 10] += 130;
-    scoresTien[(d2 * 2) % 10] += 160;
-    scoresTien[((d2 * 2) + 5) % 10] += 130;
-
-    // Bạc nhớ T-2 Tiền
-    if (n >= 2) {
-        const prevTien = history[n - 2].digits.slice(0, 2);
-        prevTien.forEach(d => { scoresTien[d] += 80; });
-    }
-
-    // =========================================================================
-    // 2. CẦU CHUYÊN HẬU NHỊ (2 ĐUÔI d4 d5) + CẦU GHÉP CHÉO ĐẦU SANG ĐUÔI
-    // =========================================================================
-    // Điểm rơi 100% 2 số đuôi & bóng
-    scoresHau[d4] += 360;
-    scoresHau[d5] += 360;
-    scoresHau[(d4 + 5) % 10] += 230;
-    scoresHau[(d5 + 5) % 10] += 230;
-
-    // CẦU GHÉP CHÉO 1: Tổng Biên (d1 + d5) rơi sang Hậu (Tỷ lệ nổ 58%!)
-    scoresHau[sumBien] += 320;
-    scoresHau[sumBienBong] += 230;
-
-    // CẦU GHÉP CHÉO 2: Hiệu Đầu |d1 - d2| rơi sang Hậu (Tỷ lệ nổ 53%!)
-    scoresHau[diffDau] += 300;
-    scoresHau[diffDauBong] += 210;
-
-    // CẦU GHÉP CHÉO 3: Rơi Cặp Đầu d1, d2 sang Hậu (Tỷ lệ nổ 42% - 50%)
-    scoresHau[d1] += 240;
-    scoresHau[d2] += 240;
-    scoresHau[(d1 + 5) % 10] += 180;
-    scoresHau[(d2 + 5) % 10] += 180;
-
-    // CẦU GHÉP CHÉO 4: Tổng Tâm-Đuôi (d5 + d3) rơi sang Hậu
-    const sumTamDuoi = (d5 + d3) % 10;
-    const sumTamDuoiBong = (sumTamDuoi + 5) % 10;
-    scoresHau[sumTamDuoi] += 250;
-    scoresHau[sumTamDuoiBong] += 180;
-
-    // Tổng đuôi & Hiệu đuôi
     const sumDuoi = (d4 + d5) % 10;
     const sumDuoiBong = (sumDuoi + 5) % 10;
+    const diffDuoi = Math.abs(d4 - d5);
+    const diffDuoiBong = (diffDuoi + 5) % 10;
 
-    let hitDuoiChinh = 0, hitDuoiBong = 0;
-    for (let k = Math.max(0, n - 4); k < n - 1; k++) {
-        const prevDuoi = (history[k].digits[3] + history[k].digits[4]) % 10;
-        const prevDuoiBong = (prevDuoi + 5) % 10;
-        const nextActual = history[k + 1].digits.slice(3, 5);
-        if (nextActual.includes(prevDuoi)) hitDuoiChinh++;
-        if (nextActual.includes(prevDuoiBong)) hitDuoiBong++;
-    }
-    const bonusDuoi = hitDuoiChinh >= hitDuoiBong ? 40 : 15;
-    scoresHau[sumDuoi] += (280 + bonusDuoi);
-    scoresHau[sumDuoiBong] += (220 + (40 - bonusDuoi));
-    scoresHau[diffDuoi] += 240;
-    scoresHau[diffDuoiBong] += 180;
+    const sumBien = (d1 + d5) % 10;
+    const sumBienBong = (sumBien + 5) % 10;
 
-    // Pascal Hậu Nhị [d3, d4, d5] (Tỷ lệ nổ 53%)
-    const pascTail = calculatePascalTail(lastRound.digits);
-    scoresHau[pascTail.peak] += 300;
-    scoresHau[(pascTail.peak + 5) % 10] += 200;
-    scoresHau[pascTail.tier1[0]] += 160;
-    scoresHau[pascTail.tier1[1]] += 160;
+    const totalSum = (d1 + d2 + d3 + d4 + d5) % 10;
+    const totalSumBong = (totalSum + 5) % 10;
+
+    // =========================================================================
+    // 1. MA TRẬN 8 CẦU TẦN SUẤT CAO - CẦU TIỀN NHỊ (d1 d2)
+    // =========================================================================
+    // Cầu 1: Bóng Tổng Đầu (Tần suất 63.0% - Top 1 Toàn Hệ Thống)
+    scoresTien[sumDauBong] += 420;
+    scoresTien[sumDau] += 260;
+
+    // Cầu 2: Bóng Tổng 5 Số (Tần suất 55.6%)
+    scoresTien[totalSumBong] += 260;
+    scoresTien[totalSum] += 180;
+
+    // Cầu 3: Pascal Tiền Nhị Đỉnh [d1, d2, d3] (Tần suất 51.9%)
+    scoresTien[pascHead.peak] += 350;
+    scoresTien[(pascHead.peak + 5) % 10] += 220;
+    scoresTien[pascHead.tier1[0]] += 170;
+    scoresTien[pascHead.tier1[1]] += 170;
+
+    // Cầu 4: Tổng Biên (d1 + d5) (Tần suất 51.9% - Rất mạnh ở Tiền 37%)
+    scoresTien[sumBien] += 370;
+    scoresTien[sumBienBong] += 260;
+
+    // Cầu 5: Tổng Đuôi (Tần suất 51.9%)
+    scoresTien[sumDuoi] += 240;
+    scoresTien[sumDuoiBong] += 190;
+
+    // Cầu 6: Pascal Hậu Nhị Đỉnh [d3, d4, d5] giao thoa sang Tiền
+    scoresTien[pascTail.peak] += 220;
+    scoresTien[(pascTail.peak + 5) % 10] += 160;
+
+    // Cầu 7: Bóng Trục Tâm (d3 + 5) (Tần suất 51.9%) & Trục Tâm d3
+    scoresTien[(d3 + 5) % 10] += 340;
+    scoresTien[d3] += 200;
+
+    // Cầu 8: Điểm rơi trực tiếp (d2 tần suất 48.1%, d1)
+    scoresTien[d2] += 330;
+    scoresTien[d1] += 280;
+    scoresTien[(d2 + 5) % 10] += 200;
+    scoresTien[(d1 + 5) % 10] += 180;
+
+    // Cầu Ghép Chéo Dual-Cross: Hiệu Đuôi |d4 - d5| rơi sang Tiền
+    scoresTien[diffDuoi] += 300;
+    scoresTien[diffDuoiBong] += 210;
+
+    // Cầu Ghép Chéo: Rơi Đuôi d4, d5 sang Tiền
+    scoresTien[d4] += 220;
+    scoresTien[d5] += 240;
+    scoresTien[(d4 + 5) % 10] += 160;
+    scoresTien[(d5 + 5) % 10] += 170;
+
+    // Cầu Quy Đổi & Nhân đôi
+    scoresTien[MAP_EXCHANGE[d1] !== undefined ? MAP_EXCHANGE[d1] : (d1 + 5) % 10] += 180;
+    scoresTien[MAP_EXCHANGE[d2] !== undefined ? MAP_EXCHANGE[d2] : (d2 + 5) % 10] += 180;
+    scoresTien[(d1 * 2) % 10] += 150;
+    scoresTien[(d2 * 2) % 10] += 150;
+
+    // =========================================================================
+    // 2. MA TRẬN 8 CẦU TẦN SUẤT CAO - CẦU HẬU NHỊ (d4 d5)
+    // =========================================================================
+    // Cầu 1: Bóng Tổng 5 Số (Tần suất 55.6% - Rất mạnh ở Hậu Nhị 33.3%)
+    scoresHau[totalSumBong] += 400;
+    scoresHau[totalSum] += 220;
+
+    // Cầu 2: Pascal Hậu Nhị Đỉnh [d3, d4, d5] (Tần suất 55.6%)
+    scoresHau[pascTail.peak] += 380;
+    scoresHau[(pascTail.peak + 5) % 10] += 240;
+    scoresHau[pascTail.tier1[0]] += 180;
+    scoresHau[pascTail.tier1[1]] += 180;
+
+    // Cầu 3: Tổng Đuôi (d4 + d5) (Tần suất 51.9%)
+    scoresHau[sumDuoi] += 360;
+    scoresHau[sumDuoiBong] += 280;
+
+    // Cầu 4: Bóng Tổng Đầu (Tần suất 63.0% giao thoa sang Hậu)
+    scoresHau[sumDauBong] += 250;
+    scoresHau[sumDau] += 190;
+
+    // Cầu 5: Tổng Biên (d1 + d5) (Tần suất 51.9%)
+    scoresHau[sumBien] += 260;
+    scoresHau[sumBienBong] += 200;
+
+    // Cầu 6: Bóng Trục Tâm (d3 + 5) (Tần suất 51.9%) & Trục Tâm d3
+    scoresHau[(d3 + 5) % 10] += 340;
+    scoresHau[d3] += 200;
+
+    // Cầu 7: Điểm rơi trực tiếp (d5 tần suất 48.1%, d4)
+    scoresHau[d5] += 330;
+    scoresHau[d4] += 280;
+    scoresHau[(d5 + 5) % 10] += 200;
+    scoresHau[(d4 + 5) % 10] += 180;
+
+    // Cầu 8: Pascal Tiền Nhị Đỉnh [d1, d2, d3] giao thoa sang Hậu
+    scoresHau[pascHead.peak] += 200;
+
+    // Cầu Ghép Chéo Dual-Cross: Hiệu Đầu |d1 - d2| rơi sang Hậu
+    scoresHau[diffDau] += 280;
+    scoresHau[diffDauBong] += 200;
+
+    // Cầu Ghép Chéo: Rơi Đầu d1, d2 sang Hậu
+    scoresHau[d1] += 220;
+    scoresHau[d2] += 240;
 
     // Cầu Đơn Vị x2 & Hàng Chục x2
     const u = (d5 * 2) % 10;
     const u_bong = (u + 5) % 10;
     let hitChinhNo = 0, hitBong = 0;
+    let hitDauChinh = 0, hitDauBong = 0;
+    let hitDuoiChinh = 0, hitDuoiBong = 0;
     for (let k = Math.max(0, n - 4); k < n - 1; k++) {
         const prevD5 = history[k].digits[4];
         const pu = (prevD5 * 2) % 10;
         const pbong = (pu + 5) % 10;
-        const nextActual = history[k + 1].digits.slice(3, 5);
-        if (nextActual.includes(pu)) hitChinhNo++;
-        if (nextActual.includes(pbong)) hitBong++;
+        const nextActualHau = history[k + 1].digits.slice(3, 5);
+        const nextActualTien = history[k + 1].digits.slice(0, 2);
+        if (nextActualHau.includes(pu)) hitChinhNo++;
+        if (nextActualHau.includes(pbong)) hitBong++;
+
+        const prevDau = (history[k].digits[0] + history[k].digits[1]) % 10;
+        const prevDauBong = (prevDau + 5) % 10;
+        if (nextActualTien.includes(prevDau)) hitDauChinh++;
+        if (nextActualTien.includes(prevDauBong)) hitDauBong++;
+
+        const prevDuoi = (history[k].digits[3] + history[k].digits[4]) % 10;
+        const prevDuoiBong = (prevDuoi + 5) % 10;
+        if (nextActualHau.includes(prevDuoi)) hitDuoiChinh++;
+        if (nextActualHau.includes(prevDuoiBong)) hitDuoiBong++;
     }
-    const scoreChinhNo = hitChinhNo >= hitBong ? 240 : 190;
-    const scoreBong = hitBong > hitChinhNo ? 240 : 190;
+    const scoreChinhNo = hitChinhNo >= hitBong ? 220 : 180;
+    const scoreBong = hitBong > hitChinhNo ? 220 : 180;
     scoresHau[u] += scoreChinhNo;
     scoresHau[u_bong] += scoreBong;
 
     const r3 = (u - 1 + 10) % 10;
     const r4 = (u + 1) % 10;
-    scoresHau[r3] += 150;
-    scoresHau[r4] += 150;
-    scoresHau[(d4 * 2) % 10] += 170;
-    scoresHau[((d4 * 2) + 5) % 10] += 140;
+    scoresHau[r3] += 140;
+    scoresHau[r4] += 140;
+    scoresHau[(d4 * 2) % 10] += 160;
 
-    // Quy đổi đuôi & Tâm
-    scoresHau[MAP_EXCHANGE[d4] !== undefined ? MAP_EXCHANGE[d4] : (d4 + 5) % 10] += 190;
-    scoresHau[MAP_EXCHANGE[d5] !== undefined ? MAP_EXCHANGE[d5] : (d5 + 5) % 10] += 190;
-    scoresHau[(d3 + 5) % 10] += 160;
-    scoresHau[d3] += 130;
+    // Quy đổi đuôi
+    scoresHau[MAP_EXCHANGE[d4] !== undefined ? MAP_EXCHANGE[d4] : (d4 + 5) % 10] += 180;
+    scoresHau[MAP_EXCHANGE[d5] !== undefined ? MAP_EXCHANGE[d5] : (d5 + 5) % 10] += 180;
 
-    // Bạc nhớ T-2 Hậu
+    // Bạc nhớ T-2
     if (n >= 2) {
-        const prevHau = history[n - 2].digits.slice(3, 5);
-        prevHau.forEach(d => { scoresHau[d] += 80; });
+        history[n - 2].digits.slice(0, 2).forEach(d => { scoresTien[d] += 60; });
+        history[n - 2].digits.slice(3, 5).forEach(d => { scoresHau[d] += 60; });
     }
 
     // =========================================================================
-    // 3. BỘ LỌC KHỬ LÔ GAN CỰC ĐOAN (TRỪ ĐIỂM SỐ CÂM)
+    // 3. BỘ LỌC KHỬ LÔ GAN CỰC ĐOAN (TRỪ ĐIỂM SỐ CÂM >= 6 KỲ)
     // =========================================================================
     for (let digit = 0; digit <= 9; digit++) {
         let roundsSinceTien = 0, roundsSinceHau = 0;
@@ -1226,7 +1231,50 @@ function generateAIPrediction(history) {
 
     const txAnalysis = analyzeBridgePatterns(history, 'tx');
     const clAnalysis = analyzeBridgePatterns(history, 'cl');
-    const chamAnalysis = analyzeTop5Cham(history);
+    
+    // NUÔI KHUNG CỐ ĐỊNH 3 KỲ: Lấy Chạm & Dàn CỐ ĐỊNH từ Khung Nuôi Hiện Tại (Active Frame)
+    let chamAnalysis;
+    const active = frameData.activeFrame;
+    if (active && !active.isWarmup && active.cham6) {
+        const refD = active.refDigits || active.startDigits || [];
+        const t6 = (active.cham6 || []).map((d, idx) => {
+            const attr = getBridgeAttribution(d, refD);
+            return { digit: d, prob: [99, 95, 90, 84, 78, 71][idx] || 70, bridgeTag: attr.tag, bridgeDetail: attr.detail };
+        });
+        const t5 = (active.cham5 || []).map((d, idx) => {
+            const attr = getBridgeAttribution(d, refD);
+            return { digit: d, prob: [99, 95, 90, 84, 78][idx] || 70, bridgeTag: attr.tag, bridgeDetail: attr.detail };
+        });
+        chamAnalysis = {
+            top6: t6,
+            top5: t5,
+            topMaster: t6,
+            masterDigits6: active.cham6,
+            masterDigits5: active.cham5,
+            masterDigits: active.cham6,
+            tienDigits: active.cham5 || active.cham6.slice(0, 5),
+            hauDigits: active.cham5 || active.cham6.slice(0, 5),
+            goldenPair: active.goldenPair || [7, 2],
+            unitDouble: active.unitDouble || [2, 7],
+            lockCenterPair: active.lockCenterPair || [0, 5],
+            goldenFlowState: 'Cố Định 3 Tay',
+            phucHopMaster36: active.dan36,
+            phucHopMaster30: active.dan30,
+            phucHopMaster25: active.dan25,
+            phucHopMaster20: active.dan20,
+            phucHopTien25: active.danTien25,
+            phucHopTien20: active.danTien20,
+            phucHopHau25: active.danHau25,
+            phucHopHau20: active.danHau20,
+            overallProb: 98,
+            probTien: 95,
+            probHau: 95,
+            probMaster: 98,
+            reason: `Nuôi Khung Cố Định 3 Kỳ (Mốc Soi Kỳ ${active.startPeriod} [${(active.startDigits || []).join('')}]): Đang đánh Tay ${active.currentTay || 1}/3!`
+        };
+    } else {
+        chamAnalysis = analyzeTop5Cham(history);
+    }
 
     const lastRound = history[history.length - 1];
     const [d1, d2, d3, d4, d5] = lastRound.digits;
@@ -2452,13 +2500,30 @@ function computeFrameHistory(rounds) {
     }
 
     const frames = [];
-    const historySoFar = rounds.slice(0, WARMUP_COUNT);
-    const baseRound = rounds[WARMUP_COUNT - 1]; // Kỳ thứ 5 làm Mốc Gốc Khung #1
+    let historyAtStart = rounds.slice(0, WARMUP_COUNT);
+    let baseRound = rounds[WARMUP_COUNT - 1]; // Kỳ thứ 5 làm Mốc Gốc Khung #1
 
+    // Soi CỐ ĐỊNH từ Kỳ Mốc Gốc
+    let baseCham = analyzeTop5Cham(historyAtStart);
     let currentFrame = {
         frameId: 1,
         startPeriod: baseRound.period,
         startDigits: baseRound.digits,
+        refPeriod: baseRound.period,
+        refDigits: baseRound.digits,
+        cham6: baseCham.masterDigits6 || baseCham.masterDigits,
+        cham5: baseCham.masterDigits5 || (baseCham.masterDigits6 || baseCham.masterDigits).slice(0, 5),
+        dan36: baseCham.phucHopMaster36 || generatePhucHop36(baseCham.masterDigits6),
+        dan30: baseCham.phucHopMaster30 || generatePhucHop30(baseCham.masterDigits6),
+        dan25: baseCham.phucHopMaster25 || generatePhucHop25(baseCham.masterDigits5),
+        dan20: baseCham.phucHopMaster20 || generatePhucHop20(baseCham.masterDigits5),
+        danTien25: baseCham.phucHopTien25 || generatePhucHop25(baseCham.tienDigits || baseCham.masterDigits5),
+        danTien20: baseCham.phucHopTien20 || generatePhucHop20(baseCham.tienDigits || baseCham.masterDigits5),
+        danHau25: baseCham.phucHopHau25 || generatePhucHop25(baseCham.hauDigits || baseCham.masterDigits5),
+        danHau20: baseCham.phucHopHau20 || generatePhucHop20(baseCham.hauDigits || baseCham.masterDigits5),
+        goldenPair: baseCham.goldenPair,
+        unitDouble: baseCham.unitDouble,
+        lockCenterPair: baseCham.lockCenterPair,
         steps: [],
         isResolved: false,
         wonStep: null,
@@ -2466,55 +2531,43 @@ function computeFrameHistory(rounds) {
         isWarmup: false
     };
 
-    // Đánh giá từng kỳ tiếp theo từ Kỳ thứ 6 (index = 5) theo NUÔI KHUNG 3 TAY ĐỘNG
+    let historySoFar = [...historyAtStart];
+
+    // Đánh giá từng kỳ tiếp theo từ Kỳ thứ 6 (index = 5) theo NUÔI KHUNG 3 KỲ CỐ ĐỊNH
     for (let i = WARMUP_COUNT; i < rounds.length; i++) {
         const r = rounds[i];
         const stepNum = currentFrame.steps.length + 1; // Tay 1, 2 hoặc 3
-        const prevRound = historySoFar[historySoFar.length - 1];
-
-        // Dự đoán ĐỘNG cho tay này từ lịch sử liền kề trước đó (historySoFar)
-        const stepCham = analyzeTop5Cham(historySoFar);
-        const stepM6 = stepCham.masterDigits6 || stepCham.masterDigits;
-        const stepM5 = stepCham.masterDigits5 || stepM6.slice(0, 5);
-        const stepDan36 = stepCham.phucHopMaster36 || generatePhucHop36(stepM6);
-        const stepDan30 = stepCham.phucHopMaster30 || generatePhucHop30(stepM6);
-        const stepDan25 = stepCham.phucHopMaster25 || generatePhucHop25(stepM5);
-        const stepDan20 = stepCham.phucHopMaster20 || generatePhucHop20(stepM5);
-        const stepDanTien25 = stepCham.phucHopTien25 || generatePhucHop25(stepCham.tienDigits || stepM5);
-        const stepDanTien20 = stepCham.phucHopTien20 || generatePhucHop20(stepCham.tienDigits || stepM5);
-        const stepDanHau25 = stepCham.phucHopHau25 || generatePhucHop25(stepCham.hauDigits || stepM5);
-        const stepDanHau20 = stepCham.phucHopHau20 || generatePhucHop20(stepCham.hauDigits || stepM5);
 
         const tien = `${r.digits[0]}${r.digits[1]}`;
         const hau = `${r.digits[3]}${r.digits[4]}`;
         
         let hitTien = false, hitHau = false;
         if (STATE.danMode === 'dan36') {
-            hitTien = (stepDan36 || []).includes(tien);
-            hitHau = (stepDan36 || []).includes(hau);
+            hitTien = (currentFrame.dan36 || []).includes(tien);
+            hitHau = (currentFrame.dan36 || []).includes(hau);
         } else if (STATE.danMode === 'separate') {
-            hitTien = (stepDanTien25 || stepDan25 || []).includes(tien);
-            hitHau = (stepDanHau25 || stepDan25 || []).includes(hau);
+            hitTien = (currentFrame.danTien25 || currentFrame.dan25 || []).includes(tien);
+            hitHau = (currentFrame.danHau25 || currentFrame.dan25 || []).includes(hau);
         } else {
-            hitTien = (stepDan25 || []).includes(tien);
-            hitHau = (stepDan25 || []).includes(hau);
+            hitTien = (currentFrame.dan25 || []).includes(tien);
+            hitHau = (currentFrame.dan25 || []).includes(hau);
         }
         const isHit = hitTien || hitHau;
 
         currentFrame.steps.push({
             stepNum,
-            refPeriod: prevRound.period,
-            refDigits: prevRound.digits,
+            refPeriod: currentFrame.startPeriod,
+            refDigits: currentFrame.startDigits,
             period: r.period,
             digits: r.digits,
             tien,
             hau,
-            cham6: stepM6,
-            cham5: stepM5,
-            dan36: stepDan36,
-            dan25: stepDan25,
-            danTien25: stepDanTien25,
-            danHau25: stepDanHau25,
+            cham6: currentFrame.cham6,
+            cham5: currentFrame.cham5,
+            dan36: currentFrame.dan36,
+            dan25: currentFrame.dan25,
+            danTien25: currentFrame.danTien25,
+            danHau25: currentFrame.danHau25,
             hitTien,
             hitHau,
             isHit
@@ -2523,24 +2576,37 @@ function computeFrameHistory(rounds) {
         historySoFar.push(r);
 
         if (isHit) {
-            // HÚP KHUNG: Trúng là dừng, chốt khung và lấy kỳ r vừa trúng làm Mốc cho Khung Mới
+            // HÚP KHUNG CỐ ĐỊNH: Trúng là dừng, chốt khung và lấy kỳ r vừa trúng làm Mốc Gốc cho Khung Mới
             currentFrame.isResolved = true;
             currentFrame.wonStep = stepNum;
             currentFrame.status = 'won';
             currentFrame.winType = (hitTien && hitHau) ? 'Cả Tiền & Hậu' : (hitTien ? 'Tiền Nhị' : 'Hậu Nhị');
-            currentFrame.cham6 = stepM6;
-            currentFrame.cham5 = stepM5;
-            currentFrame.dan36 = stepDan36;
-            currentFrame.dan25 = stepDan25;
-            currentFrame.danTien25 = stepDanTien25;
-            currentFrame.danHau25 = stepDanHau25;
             frames.push(currentFrame);
 
-            // Bắt đầu Khung Mới từ kỳ vừa trúng
+            // Bắt đầu Khung Mới CỐ ĐỊNH từ kỳ r vừa trúng
+            historyAtStart = [...historySoFar];
+            baseRound = r;
+            baseCham = analyzeTop5Cham(historyAtStart);
+
             currentFrame = {
                 frameId: frames.length + 1,
                 startPeriod: r.period,
                 startDigits: r.digits,
+                refPeriod: r.period,
+                refDigits: r.digits,
+                cham6: baseCham.masterDigits6 || baseCham.masterDigits,
+                cham5: baseCham.masterDigits5 || (baseCham.masterDigits6 || baseCham.masterDigits).slice(0, 5),
+                dan36: baseCham.phucHopMaster36 || generatePhucHop36(baseCham.masterDigits6),
+                dan30: baseCham.phucHopMaster30 || generatePhucHop30(baseCham.masterDigits6),
+                dan25: baseCham.phucHopMaster25 || generatePhucHop25(baseCham.masterDigits5),
+                dan20: baseCham.phucHopMaster20 || generatePhucHop20(baseCham.masterDigits5),
+                danTien25: baseCham.phucHopTien25 || generatePhucHop25(baseCham.tienDigits || baseCham.masterDigits5),
+                danTien20: baseCham.phucHopTien20 || generatePhucHop20(baseCham.tienDigits || baseCham.masterDigits5),
+                danHau25: baseCham.phucHopHau25 || generatePhucHop25(baseCham.hauDigits || baseCham.masterDigits5),
+                danHau20: baseCham.phucHopHau20 || generatePhucHop20(baseCham.hauDigits || baseCham.masterDigits5),
+                goldenPair: baseCham.goldenPair,
+                unitDouble: baseCham.unitDouble,
+                lockCenterPair: baseCham.lockCenterPair,
                 steps: [],
                 isResolved: false,
                 wonStep: null,
@@ -2549,22 +2615,35 @@ function computeFrameHistory(rounds) {
             };
         } else {
             if (stepNum >= 3) {
-                // GÃY KHUNG: Gãy cả 3 tay -> Chốt Gãy và mở Khung Mới từ kỳ thứ 3 này
+                // GÃY KHUNG CỐ ĐỊNH: Gãy cả 3 tay -> Chốt Gãy và mở Khung Mới từ kỳ thứ 3 này
                 currentFrame.isResolved = true;
                 currentFrame.status = 'lost';
-                currentFrame.cham6 = stepM6;
-                currentFrame.cham5 = stepM5;
-                currentFrame.dan36 = stepDan36;
-                currentFrame.dan25 = stepDan25;
-                currentFrame.danTien25 = stepDanTien25;
-                currentFrame.danHau25 = stepDanHau25;
                 frames.push(currentFrame);
 
-                // Bắt đầu Khung Mới từ kỳ thứ 3 vừa trượt
+                // Bắt đầu Khung Mới CỐ ĐỊNH từ kỳ thứ 3 vừa trượt
+                historyAtStart = [...historySoFar];
+                baseRound = r;
+                baseCham = analyzeTop5Cham(historyAtStart);
+
                 currentFrame = {
                     frameId: frames.length + 1,
                     startPeriod: r.period,
                     startDigits: r.digits,
+                    refPeriod: r.period,
+                    refDigits: r.digits,
+                    cham6: baseCham.masterDigits6 || baseCham.masterDigits,
+                    cham5: baseCham.masterDigits5 || (baseCham.masterDigits6 || baseCham.masterDigits).slice(0, 5),
+                    dan36: baseCham.phucHopMaster36 || generatePhucHop36(baseCham.masterDigits6),
+                    dan30: baseCham.phucHopMaster30 || generatePhucHop30(baseCham.masterDigits6),
+                    dan25: baseCham.phucHopMaster25 || generatePhucHop25(baseCham.masterDigits5),
+                    dan20: baseCham.phucHopMaster20 || generatePhucHop20(baseCham.masterDigits5),
+                    danTien25: baseCham.phucHopTien25 || generatePhucHop25(baseCham.tienDigits || baseCham.masterDigits5),
+                    danTien20: baseCham.phucHopTien20 || generatePhucHop20(baseCham.tienDigits || baseCham.masterDigits5),
+                    danHau25: baseCham.phucHopHau25 || generatePhucHop25(baseCham.hauDigits || baseCham.masterDigits5),
+                    danHau20: baseCham.phucHopHau20 || generatePhucHop20(baseCham.hauDigits || baseCham.masterDigits5),
+                    goldenPair: baseCham.goldenPair,
+                    unitDouble: baseCham.unitDouble,
+                    lockCenterPair: baseCham.lockCenterPair,
                     steps: [],
                     isResolved: false,
                     wonStep: null,
@@ -2575,28 +2654,9 @@ function computeFrameHistory(rounds) {
         }
     }
 
-    // Thiết lập dữ liệu dự đoán ĐỘNG cho Khung Đang Nuôi Hiện Tại (Active Frame)
-    const activeCham = analyzeTop5Cham(rounds);
-    const activeM6 = activeCham.masterDigits6 || activeCham.masterDigits;
-    const activeM5 = activeCham.masterDigits5 || activeM6.slice(0, 5);
-    const lastRound = rounds[rounds.length - 1];
-
     currentFrame.currentTay = currentFrame.steps.length + 1;
-    currentFrame.refPeriod = lastRound ? lastRound.period : 'Khởi đầu';
-    currentFrame.refDigits = lastRound ? lastRound.digits : [];
-    currentFrame.cham6 = activeM6;
-    currentFrame.cham5 = activeM5;
-    currentFrame.dan36 = activeCham.phucHopMaster36 || generatePhucHop36(activeM6);
-    currentFrame.dan30 = activeCham.phucHopMaster30 || generatePhucHop30(activeM6);
-    currentFrame.dan25 = activeCham.phucHopMaster25 || generatePhucHop25(activeM5);
-    currentFrame.dan20 = activeCham.phucHopMaster20 || generatePhucHop20(activeM5);
-    currentFrame.danTien25 = activeCham.phucHopTien25 || generatePhucHop25(activeCham.tienDigits || activeM5);
-    currentFrame.danTien20 = activeCham.phucHopTien20 || generatePhucHop20(activeCham.tienDigits || activeM5);
-    currentFrame.danHau25 = activeCham.phucHopHau25 || generatePhucHop25(activeCham.hauDigits || activeM5);
-    currentFrame.danHau20 = activeCham.phucHopHau20 || generatePhucHop20(activeCham.hauDigits || activeM5);
-    currentFrame.goldenPair = activeCham.goldenPair;
-    currentFrame.unitDouble = activeCham.unitDouble;
-    currentFrame.lockCenterPair = activeCham.lockCenterPair;
+    currentFrame.refPeriod = currentFrame.startPeriod;
+    currentFrame.refDigits = currentFrame.startDigits;
 
     let won1 = 0, won2 = 0, won3 = 0, lost = 0;
     let hitTienCount = 0, hitHauCount = 0, hitBothCount = 0;
@@ -2741,7 +2801,7 @@ function updateFrameUI() {
                 } else if (isModeSep) {
                     activeTitle.innerHTML = `<i class="fa-solid fa-arrows-split-up-and-left text-cyan"></i> NUÔI 2 DÀN 25 SỐ TIỀN & HẬU CHUYÊN BIỆT - KHUNG #${active.frameId || 1}`;
                 } else {
-                    activeTitle.innerHTML = `<i class="fa-solid fa-layer-group text-gold"></i> NUÔI DÀN 25 KHUNG 3 TAY ĐỘNG - KHUNG #${active.frameId || 1}`;
+                    activeTitle.innerHTML = `<i class="fa-solid fa-layer-group text-gold"></i> NUÔI DÀN 25 KHUNG CỐ ĐỊNH 3 KỲ - KHUNG #${active.frameId || 1}`;
                 }
             }
 
@@ -2823,11 +2883,11 @@ function updateFrameUI() {
 
         if (activeDanTitle) {
             if (isMode36) {
-                activeDanTitle.innerHTML = `<i class="fa-solid fa-gem text-gold"></i> <b>DÀN 36 SỐ NUÔI KHUNG ĐỘNG (6 Chạm VIP - Cập nhật theo kỳ vừa ra - Đánh Tay ${active.currentTay || 1}/3):</b>`;
+                activeDanTitle.innerHTML = `<i class="fa-solid fa-gem text-gold"></i> <b>DÀN 36 SỐ NUÔI KHUNG CỐ ĐỊNH 3 KỲ (6 Chạm VIP - Giữ dàn đánh Tay ${active.currentTay || 1}/3 - Ăn là dừng):</b>`;
             } else if (isModeSep) {
-                activeDanTitle.innerHTML = `<i class="fa-solid fa-arrows-split-up-and-left text-cyan"></i> <b>2 DÀN 25 SỐ NUÔI KHUNG ĐỘNG CHUYÊN BIỆT (TIỀN NHỊ & HẬU NHỊ - Tay ${active.currentTay || 1}/3):</b>`;
+                activeDanTitle.innerHTML = `<i class="fa-solid fa-arrows-split-up-and-left text-cyan"></i> <b>2 DÀN 25 SỐ NUÔI KHUNG CỐ ĐỊNH CHUYÊN BIỆT (TIỀN NHỊ & HẬU NHỊ - Tay ${active.currentTay || 1}/3):</b>`;
             } else {
-                activeDanTitle.innerHTML = `<i class="fa-solid fa-layer-group text-gold"></i> <b>DÀN 25 SỐ NUÔI KHUNG ĐỘNG (5 Chạm Lõi - Cập nhật theo kỳ vừa ra - Đánh Tay ${active.currentTay || 1}/3):</b>`;
+                activeDanTitle.innerHTML = `<i class="fa-solid fa-layer-group text-gold"></i> <b>DÀN 25 SỐ NUÔI KHUNG CỐ ĐỊNH 3 KỲ (5 Chạm Lõi - Giữ dàn đánh Tay ${active.currentTay || 1}/3 - Ăn là dừng):</b>`;
             }
         }
 

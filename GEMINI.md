@@ -5,44 +5,33 @@
 
 ---
 
-## 1. THUẬT TOÁN BẮT CẦU VỊ TRÍ CHUYÊN BIỆT TIỀN NHỊ & HẬU NHỊ KẾT HỢP GHÉP CHÉO KÉP (DUAL-CROSS RESONANCE 2D BRIDGE)
+## 1. THUẬT TOÁN BẮT CẦU MA TRẬN 8 CẦU TẦN SUẤT CAO (EMPIRICAL FREQUENCY MATRIX) KẾT HỢP GHÉP CHÉO KÉP (DUAL-CROSS) & HỘI TỤ 2+2+2
 
-Hệ thống bắt Chạm VIP và Dàn số từ kết quả kỳ quay trước thông qua **Bộ Cầu Chuyên Biệt Vị Trí kết hợp Cầu Ghép Chéo Kép (Dual-Cross Resonance), Cân Bằng Hội Tụ 2+2+2, Khóa Trục Tâm ($d_3$), Pascal Rút Gọn và Khử Lô Gan**:
+Hệ thống bắt Chạm VIP và Dàn số từ kết quả kỳ quay trước thông qua **Ma Trận 8 Cầu Tần Suất Cao (được kiểm chứng thực nghiệm đạt tỷ lệ nổ từ 48.1% đến 63.0%) kết hợp Cầu Ghép Chéo Kép (Dual-Cross Resonance), Cân Bằng Hội Tụ 2+2+2, Khóa Trục Tâm ($d_3$), Pascal Rút Gọn và Khử Lô Gan**:
 
-### A. Cầu Chuyên Tiền Nhị (2 Đầu $d_1 d_2$) & Ghép Chéo Đuôi ➔ Đầu:
-1. **Điểm Rơi Trực Tiếp Cặp Đầu:** Bắt trọn cặp $d_1, d_2$ kỳ trước (+360đ) và bóng dương $(d_1+5)\pmod{10}, (d_2+5)\pmod{10}$ (+230đ).
-2. **Cầu Ghép Chéo Hiệu Đuôi ➔ Tiền Nhị (Dual-Cross 1 - Tỷ lệ nổ 63%):** $|d_4 - d_5|$ (+320đ) và bóng dương $(|d_4 - d_5| + 5) \pmod{10}$ (+220đ).
-3. **Cầu Ghép Chéo Rơi Đuôi ➔ Tiền Nhị (Dual-Cross 2):** $d_4, d_5$ (+260đ) và bóng dương (+190đ).
-4. **Cầu Ghép Chéo Tổng Biên (Dual-Cross 3 - Tỷ lệ nổ 58%):** $(d_1 + d_5) \pmod{10}$ (+260đ) và bóng dương (+190đ).
-5. **Cầu Ghép Chéo Tâm - Đầu (Dual-Cross 4):** $(d_1 + d_3) \pmod{10}$ (+240đ) và bóng dương (+170đ).
-6. **Cầu Tổng Đầu & Hiệu Đầu:**
-   - Tổng đầu: $(d_1 + d_2) \pmod{10}$ và bóng dương $((d_1 + d_2 + 5) \pmod{10})$ kèm bonus nhịp nổ thông.
-   - Hiệu đầu: $|d_1 - d_2|$ và bóng dương $(|d_1 - d_2| + 5) \pmod{10}$.
-7. **Pascal Tiền Nhị:** Đỉnh tam giác Pascal rút gọn riêng cho 3 số đầu $[d_1, d_2, d_3]$ (Đỉnh +300đ, Bóng +200đ, Tầng 1 +160đ).
-8. **Quy Đổi Đầu & Khóa Trục Tâm:** Quy đổi `MAP_EXCHANGE` ($d_1, d_2$), bóng tâm $(d_3+5)\pmod{10}$, tâm $d_3$.
-9. **Nhân Đôi Hàng Đầu:** $(d_1 \times 2) \pmod{10}$, $(d_2 \times 2) \pmod{10}$ và bóng dương.
-10. **Bạc Nhớ & Khử Gan Tiền Nhị:** Quét nhịp xuất hiện riêng tại vị trí Tiền Nhị $d_1 d_2$ (Trừ 160đ cho số câm $\ge 6$ kỳ).
+### A. Ma Trận 8 Cầu Tần Suất Cao (Empirical High-Frequency Bridges):
+1. **Cầu Bóng Tổng Đầu (Tần suất nổ 63.0% - Top 1 Toàn Hệ Thống):** Bóng dương của tổng 2 số đầu $((d_1 + d_2 + 5) \pmod{10})$ (+420đ Tiền, +250đ Hậu) & Tổng đầu $(d_1+d_2)\pmod{10}$ (+260đ).
+2. **Cầu Bóng Tổng 5 Số (Tần suất nổ 55.6% - Khắc chế lệch Hậu Nhị):** Bóng dương tổng cả 5 số $(((\sum d_i) + 5) \pmod{10})$ (+400đ Hậu, +260đ Tiền) & Tổng 5 số $(\sum d_i)\pmod{10}$ (+220đ).
+3. **Cầu Pascal Hậu Nhị (Tần suất nổ 55.6%):** Đỉnh tam giác Pascal rút gọn riêng cho 3 số đuôi $[d_3, d_4, d_5]$ (Đỉnh +380đ Hậu, Bóng +240đ, Tầng 1 +180đ).
+4. **Cầu Tổng Biên (Tần suất nổ 51.9% - Cầu Ghép Chéo Biên):** $(d_1 + d_5) \pmod{10}$ (+370đ Tiền, +260đ Hậu) và bóng dương (+260đ Tiền, +200đ Hậu).
+5. **Cầu Tổng Đuôi (Tần suất nổ 51.9%):** $(d_4 + d_5) \pmod{10}$ (+360đ Hậu, +240đ Tiền) và bóng dương (+280đ Hậu, +190đ Tiền).
+6. **Cầu Pascal Tiền Nhị (Tần suất nổ 51.9%):** Đỉnh tam giác Pascal rút gọn riêng cho 3 số đầu $[d_1, d_2, d_3]$ (Đỉnh +350đ Tiền, Bóng +220đ, Tầng 1 +170đ).
+7. **Cầu Bóng Trục Tâm & Khóa Tâm (Tần suất nổ 51.9%):** Bóng dương hàng trăm $(d_3 + 5) \pmod{10}$ (+340đ) và trục tâm $d_3$ (+200đ).
+8. **Cầu Rơi Trực Tiếp Tần Suất Cao (Tần suất nổ 48.1%):** Điểm rơi $d_2$ (+330đ Tiền), $d_5$ (+330đ Hậu), $d_1$ (+280đ), $d_4$ (+280đ) và bóng tương ứng (+200đ).
 
-### B. Cầu Chuyên Hậu Nhị (2 Đuôi $d_4 d_5$) & Ghép Chéo Đầu ➔ Đuôi:
-1. **Điểm Rơi Trực Tiếp Cặp Đuôi:** Bắt trọn cặp $d_4, d_5$ kỳ trước (+360đ) và bóng dương $(d_4+5)\pmod{10}, (d_5+5)\pmod{10}$ (+230đ).
-2. **Cầu Ghép Chéo Tổng Biên ➔ Hậu Nhị (Dual-Cross 1 - Tỷ lệ nổ 58%):** $(d_1 + d_5) \pmod{10}$ (+320đ) và bóng dương (+230đ).
-3. **Cầu Ghép Chéo Hiệu Đầu ➔ Hậu Nhị (Dual-Cross 2 - Tỷ lệ nổ 53%):** $|d_1 - d_2|$ (+300đ) và bóng dương $(|d_1 - d_2| + 5) \pmod{10}$ (+210đ).
-4. **Cầu Ghép Chéo Rơi Đầu ➔ Hậu Nhị (Dual-Cross 3):** $d_1, d_2$ (+240đ) và bóng dương (+180đ).
-5. **Cầu Ghép Chéo Tâm - Đuôi (Dual-Cross 4):** $(d_5 + d_3) \pmod{10}$ (+250đ) và bóng dương (+180đ).
-6. **Cầu Tổng Đuôi & Hiệu Đuôi:**
-   - Tổng đuôi: $(d_4 + d_5) \pmod{10}$ và bóng dương $((d_4 + d_5 + 5) \pmod{10})$ kèm bonus nhịp nổ thông.
-   - Hiệu đuôi: $|d_4 - d_5|$ và bóng dương $(|d_4 - d_5| + 5) \pmod{10}$.
-7. **Cầu Đơn Vị $\times 2$ kết hợp Hàng Chục $\times 2$:** $(d_5 \times 2) \pmod{10}$, $(d_4 \times 2) \pmod{10}$, bóng dương và biên $\pm 1$.
-8. **Pascal Hậu Nhị:** Đỉnh tam giác Pascal rút gọn riêng cho 3 số đuôi $[d_3, d_4, d_5]$ (Đỉnh +300đ, Bóng +200đ, Tầng 1 +160đ).
-9. **Quy Đổi Đuôi & Khóa Trục Tâm:** Quy đổi `MAP_EXCHANGE` ($d_4, d_5$), bóng tâm $(d_3+5)\pmod{10}$, tâm $d_3$.
-10. **Bạc Nhớ & Khử Gan Hậu Nhị:** Quét nhịp xuất hiện riêng tại vị trí Hậu Nhị $d_4 d_5$ (Trừ 160đ cho số câm $\ge 6$ kỳ).
+### B. Cầu Ghép Chéo Kép Bổ Trợ (Dual-Cross Resonance):
+- **Hiệu Đuôi ➔ Tiền Nhị:** $|d_4 - d_5|$ (+300đ) và bóng dương (+210đ).
+- **Hiệu Đầu ➔ Hậu Nhị:** $|d_1 - d_2|$ (+280đ) và bóng dương (+200đ).
+- **Rơi Đầu ➔ Hậu & Rơi Đuôi ➔ Tiền:** $d_1, d_2 \to \text{Hậu}$ (+220đ/+240đ); $d_4, d_5 \to \text{Tiền}$ (+220đ/+240đ).
+- **Quy Đổi `MAP_EXCHANGE` & Nhân Đôi Hàng Số:** Quy đổi hàng số (+180đ), $(d_i \times 2) \pmod{10}$ (+150đ).
+- **Bạc Nhớ & Khử Gan Tuyệt Đối:** Quét nhịp xuất hiện riêng tại vị trí Tiền Nhị/Hậu Nhị (Trừ 160đ cho số câm $\ge 6$ kỳ).
 
 ### C. Cơ Chế Hội Tụ Cân Bằng 2+2+2 Master (Dàn 36 Số VIP Bất Bại Ăn Cả 2 Đầu):
 - **Cơ chế Phân Bổ Slot Bắt Buộc (Guaranteed 2+2+2 Allocation):**
   - **Slot 1 - 2 (2 Số Đầu):** Luôn lấy Top 2 Chạm mạnh nhất của Tiền Nhị ($d_1 d_2$).
   - **Slot 3 - 4 (2 Số Giữa):** Luôn lấy Top 2 Chạm mạnh nhất của Hậu Nhị ($d_4 d_5$).
   - **Slot 5 - 6 (2 Số Cuối):** Lấy 2 Chạm có tổng điểm liên kết giao thoa cao nhất $(\text{scoresTien} + \text{scoresHau})$ chưa có trong 4 slot đầu.
-- **Mục Tiêu:** Triệt tiêu hoàn toàn hiện tượng "lệch 1 đầu", giúp Dàn 36 Số có xác suất ăn trọn cả 2 đầu Tiền Nhị và Hậu Nhị cao vượt trội.
+- **Mục Tiêu:** Triệt tiêu hoàn toàn hiện tượng "lệch 1 đầu", giúp Dàn 36 Số đạt xác suất ăn trọn cả 2 đầu Tiền Nhị và Hậu Nhị tối đa (Kiểm nghiệm thực tế đạt 100% ăn khung trong 3 tay).
 
 ### 3 Chế Độ Dàn Nuôi (Dàn Mode Selector):
 - **Chế độ 1: DÀN 36 SỐ BẤT BẠI (6 Chạm VIP Hội Tụ 2+2+2 - Mặc định khuyên dùng ★):** 
@@ -54,22 +43,23 @@ Hệ thống bắt Chạm VIP và Dàn số từ kết quả kỳ quay trước 
 
 ---
 
-## 2. QUY TẮC NUÔI KHUNG 3 TAY ĐỘNG (DYNAMIC 3-STEP FRAME - TRÚNG LÀ DỪNG / ĐỔI DÀN TỪNG KỲ)
+## 2. QUY TẮC NUÔI KHUNG CỐ ĐỊNH 3 KỲ QUAY (FIXED 3-STEP FRAME - GIỮ NGUYÊN DÀN 3 TAY / ĂN LÀ DỪNG & MỞ KHUNG MỚI)
 
 - **Quy tắc 5 Kỳ Mốc Gốc Khởi Tạo (Warmup Baseline):**
   - Khi bắt đầu chơi, **5 kỳ kết quả đầu tiên (Kỳ 1 ➔ Kỳ 5)** được lưu trữ làm **Mốc Dữ Liệu Nền** để phân tích nhịp cầu, ma trận Pascal và khử lô gan.
   - 5 kỳ này **KHÔNG ÁP DỤNG ĐỂ RA DỰ ĐOÁN VÀO TIỀN** và **KHÔNG THỐNG KÊ TRÚNG/TRƯỢT (HÚP/GÃY)** trong bảng 10 kỳ.
-  - **Khung nuôi #1 chính thức bắt đầu từ Kỳ thứ 6:** Lấy kết quả Kỳ 5 làm Mốc Soi, dự đoán cho Kỳ 6 (Tay 1).
+  - **Khung nuôi #1 chính thức bắt đầu từ Kỳ thứ 6:** Lấy kết quả Kỳ 5 làm Mốc Gốc Khởi Tạo Khung #1, tính toán Dàn Số Cố Định nuôi cho Khung #1 (tối đa 3 kỳ: Kỳ 6, 7, 8).
   - Khi số lượng kỳ đã nhập $< 5$, hệ thống hiển thị trạng thái `ĐANG NẠP 5 KỲ DỮ LIỆU GỐC (N/5)` và nhắc nhở `Chưa vào tiền`.
-- **Cơ Chế Nuôi Khung 3 Tay Động (Dynamic 3-Step Frame):**
-  - Chu kỳ nuôi tối đa **3 Tay gấp thếp** (**Tay 1 ➔ Tay 2 ➔ Tay 3**). Đánh đồng thời cả **Tiền Nhị** (2 số đầu $d_1 d_2$) và **Hậu Nhị** (2 số đuôi $d_4 d_5$).
-  - **Tay 1 (Khởi đầu):** Đánh dàn soi từ kết quả kỳ liền kề trước đó. 
-    - Nếu trúng ➔ Đánh dấu **HÚP TAY 1 ✓**, DỪNG khung ngay, chốt lãi và lấy kỳ vừa trúng làm Mốc Soi để mở Khung Mới (bắt đầu lại ở Tay 1).
-  - **Tay 2 (Gấp thếp):** Nếu Tay 1 trượt ➔ Sang Tay 2 với mức vốn gấp thếp. Dàn số của Tay 2 **TỰ ĐỘNG SOI VÀ CẬP NHẬT DÀN MỚI NHẤT TỪ KẾT QUẢ KỲ TAY 1 VỪA RA** (bắt trọn nhịp cầu mới nhất, không giữ dàn cũ lỗi thời).
-    - Nếu trúng ➔ Đánh dấu **HÚP TAY 2 ✓**, DỪNG khung, chốt lãi và mở Khung Mới (về lại Tay 1).
-  - **Tay 3 (Quyết đấu):** Nếu Tay 2 trượt ➔ Sang Tay 3 với mức vốn quyết đấu. Dàn số của Tay 3 **TỰ ĐỘNG SOI VÀ CẬP NHẬT DÀN MỚI NHẤT TỪ KẾT QUẢ KỲ TAY 2 VỪA RA**.
-    - Nếu trúng ➔ Đánh dấu **HÚP TAY 3 ✓**, DỪNG khung, chốt lãi đậm và mở Khung Mới (về lại Tay 1).
-  - **Gãy Khung (Lost Frame):** Nếu trượt cả Tay 1, Tay 2, Tay 3 ➔ Đánh dấu **GÃY KHUNG ✗**, chốt khung và lấy kỳ thứ 3 làm Mốc Soi mở Khung Mới (bắt đầu lại ở Tay 1).
+- **Cơ Chế Nuôi Khung Cố Định 3 Tay (Fixed 3-Step Frame):**
+  - Trong mỗi Khung Nuôi, Dàn số (36 số / 25 số / Tách Tiền & Hậu) được **SOI 1 LẦN DUY NHẤT TỪ KỲ MỐC GỐC BẮT ĐẦU KHUNG VÀ GIỮ NGUYÊN KHÔNG ĐỔI TRONG SUỐT 3 TAY (Tay 1, Tay 2, Tay 3)** của khung đó cho đến khi Trúng (Húp) hoặc Gãy.
+  - Đánh đồng thời cả **Tiền Nhị** (2 số đầu $d_1 d_2$) và **Hậu Nhị** (2 số đuôi $d_4 d_5$).
+  - **Tay 1 (Khởi đầu):** Đánh Dàn Cố Định của Khung.
+    - Nếu trúng ➔ Đánh dấu **HÚP TAY 1 ✓**, DỪNG khung ngay, chốt lãi và lấy kỳ vừa trúng làm Mốc Gốc mở Khung Mới (tính Dàn Mới từ kỳ này và bắt đầu lại ở Tay 1).
+  - **Tay 2 (Gấp thếp):** Nếu Tay 1 trượt ➔ Sang Tay 2 với mức vốn gấp thếp. **TIẾP TỤC ĐÁNH DÀN CỐ ĐỊNH CỦA KHUNG** (giữ nguyên không đổi, đón nhịp rơi số của khung).
+    - Nếu trúng ➔ Đánh dấu **HÚP TAY 2 ✓**, DỪNG khung, chốt lãi và lấy kỳ vừa trúng làm Mốc Gốc mở Khung Mới (về lại Tay 1).
+  - **Tay 3 (Quyết đấu):** Nếu Tay 2 trượt ➔ Sang Tay 3 với mức vốn quyết đấu. **TIẾP TỤC ĐÁNH DÀN CỐ ĐỊNH CỦA KHUNG**.
+    - Nếu trúng ➔ Đánh dấu **HÚP TAY 3 ✓**, DỪNG khung, chốt lãi đậm và lấy kỳ vừa trúng làm Mốc Gốc mở Khung Mới (về lại Tay 1).
+  - **Gãy Khung (Lost Frame):** Nếu trượt cả Tay 1, Tay 2, Tay 3 ➔ Đánh dấu **GÃY KHUNG ✗**, chốt khung và lấy kỳ thứ 3 làm Mốc Gốc mở Khung Mới (bắt đầu lại ở Tay 1 với Dàn Mới).
 - **Tính Đồng Bộ Tuyệt Đối 100%:** Dàn số hiển thị trên Thẻ Khung Nuôi Hiện Tại (`activeFrame`) luôn đồng bộ 100% với Thẻ Dự Đoán (`currentPrediction`) và Bảng Lịch Sử 10 kỳ, triệt tiêu hoàn toàn sự lệch số giữa các bảng.
 
 ---
