@@ -459,6 +459,21 @@
                     </div>
 
                     <div class="active-frame-body">
+                        <!-- CHỌN CHẾ ĐỘ DÀN TRỰC TIẾP TRÊN THẺ KHUNG NUÔI -->
+                        <div class="dan-mode-tabs-wrap" style="margin-bottom: 12px;">
+                            <div class="dan-mode-tabs" id="danModeTabsFrame">
+                                <button type="button" class="dan-mode-tab-btn active" id="tabFrameDan36" onclick="setDanMode('dan36')">
+                                    <i class="fa-solid fa-gem text-gold"></i> DÀN 36 SỐ BẤT BẠI (6 Chạm VIP) <span class="tab-recommend-badge">Khuyên Dùng ★</span>
+                                </button>
+                                <button type="button" class="dan-mode-tab-btn" id="tabFrameDan25" onclick="setDanMode('dan25')">
+                                    <i class="fa-solid fa-layer-group text-cyan"></i> DÀN 25 SỐ (5 Chạm Lõi)
+                                </button>
+                                <button type="button" class="dan-mode-tab-btn" id="tabFrameDanSeparate" onclick="setDanMode('separate')">
+                                    <i class="fa-solid fa-arrows-split-up-and-left text-purple"></i> TÁCH TIỀN & HẬU (2x25 Số)
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="frame-meta-row">
                             <span><i class="fa-solid fa-flag-checkered text-cyan"></i> Mốc Gốc: <b id="activeFrameOrigin" class="text-white">Chưa có</b></span>
                             <span><i class="fa-solid fa-coins text-gold"></i> Vào Vốn: <b id="activeFrameBetAdvice" class="text-green">TAY 1: Đánh 10K/số (Tổng: 720.000đ)</b></span>
@@ -491,7 +506,8 @@
                             </div>
                         </div>
 
-                        <div class="phuc-hop-box frame-dan25-box">
+                        <!-- KHỐI DÀN SỐ CHUNG CHO KHUNG (DÀN 36 HOẶC DÀN 25) -->
+                        <div class="phuc-hop-box frame-dan25-box" id="activeSingleDanBox">
                             <div class="phuc-hop-header">
                                 <span class="phuc-hop-title-badge" id="activeFrameDanTitleBadge">
                                     <i class="fa-solid fa-gem text-gold"></i> 
@@ -504,6 +520,28 @@
                                 </div>
                             </div>
                             <div class="phuc-hop-list list-unified-vip" id="activeFrameDanDisplay">Đang tải dàn số nuôi khung...</div>
+                        </div>
+
+                        <!-- KHỐI TÁCH RIÊNG 2 DÀN 25 SỐ NUÔI KHUNG (Khi chọn tab Tách Riêng) -->
+                        <div class="separate-nhi-grid" id="activeSeparateNhiGrid" style="display: none; margin-top: 10px;">
+                            <div class="sub-nhi-card card-sub-tien">
+                                <div class="sub-nhi-header">
+                                    <span class="sub-nhi-title text-cyan"><i class="fa-solid fa-angles-left"></i> <b>TIỀN NHỊ NUÔI KHUNG (25 Số Đầu)</b></span>
+                                    <div class="sub-nhi-actions">
+                                        <button type="button" class="btn-copy-phuchop btn-copy-mini" onclick="copyActiveFrameDan('tien25')"><i class="fa-solid fa-copy"></i> Copy Tiền 25</button>
+                                    </div>
+                                </div>
+                                <div class="phuc-hop-list list-sub-nhi" id="activeFrameDanTienDisplay">--</div>
+                            </div>
+                            <div class="sub-nhi-card card-sub-hau">
+                                <div class="sub-nhi-header">
+                                    <span class="sub-nhi-title text-purple"><i class="fa-solid fa-angles-right"></i> <b>HẬU NHỊ NUÔI KHUNG (25 Số Đuôi)</b></span>
+                                    <div class="sub-nhi-actions">
+                                        <button type="button" class="btn-copy-phuchop btn-copy-mini" onclick="copyActiveFrameDan('hau25')"><i class="fa-solid fa-copy"></i> Copy Hậu 25</button>
+                                    </div>
+                                </div>
+                                <div class="phuc-hop-list list-sub-nhi" id="activeFrameDanHauDisplay">--</div>
+                            </div>
                         </div>
                     </div>
                 </div>

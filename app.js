@@ -516,6 +516,9 @@ const MAP_EXCHANGE = {
 /**
  * Định danh nguồn gốc xuất xứ của từng con số Chạm (thuộc Cầu nào)
  */
+/**
+ * Định danh nguồn gốc xuất xứ của từng con số Chạm (thuộc Cầu nào)
+ */
 function getBridgeAttribution(digit, lastRoundDigits) {
     if (!lastRoundDigits || lastRoundDigits.length < 5) {
         return { tag: 'Cầu VIP', detail: 'Khởi tạo theo 6 Cầu Vàng cao thủ' };
@@ -548,26 +551,42 @@ function getBridgeAttribution(digit, lastRoundDigits) {
     const diffDuoi = Math.abs(d4 - d5);
     const diffDuoiBong = (diffDuoi + 5) % 10;
 
+    const sumBien = (d1 + d5) % 10;
+    const sumBienBong = (sumBien + 5) % 10;
+    const diffBien = Math.abs(d1 - d5);
+    const diffBienBong = (diffBien + 5) % 10;
+
+    const sumTamDau = (d1 + d3) % 10;
+    const sumTamDauBong = (sumTamDau + 5) % 10;
+    const sumTamDuoi = (d5 + d3) % 10;
+    const sumTamDuoiBong = (sumTamDuoi + 5) % 10;
+
     const tramBong = (d3 + 5) % 10;
     const pasc = calculatePascalPeak(lastRoundDigits);
     const pascHead = calculatePascalHead(lastRoundDigits);
     const pascTail = calculatePascalTail(lastRoundDigits);
 
+    // Cầu Ghép Chéo Dual-Cross Resonance
+    if (digit === sumBien) return { tag: 'Tổng Biên (d1+d5)', detail: `Cầu Ghép Chéo: ${d1} + ${d5} = ${sumBien}` };
+    if (digit === sumBienBong) return { tag: 'Bóng Tổng Biên', detail: `Cầu Ghép Chéo: Bóng dương của (${d1} + ${d5}) = ${sumBienBong}` };
+    if (digit === diffDuoi) return { tag: 'Hiệu Đuôi ➔ Tiền', detail: `Cầu Ghép Chéo Hiệu Đuôi: |${d4} - ${d5}| = ${diffDuoi}` };
+    if (digit === diffDuoiBong) return { tag: 'Bóng Hiệu Đuôi', detail: `Cầu Ghép Chéo: Bóng dương của |${d4} - ${d5}| = ${diffDuoiBong}` };
+    if (digit === diffDau) return { tag: 'Hiệu Đầu ➔ Hậu', detail: `Cầu Ghép Chéo Hiệu Đầu: |${d1} - ${d2}| = ${diffDau}` };
+    if (digit === diffDauBong) return { tag: 'Bóng Hiệu Đầu', detail: `Cầu Ghép Chéo: Bóng dương của |${d1} - ${d2}| = ${diffDauBong}` };
+
     if (digit === sumDau) return { tag: 'Tổng Đầu (Chính)', detail: `Cầu Tổng Đầu: ${d1} + ${d2} = ${sumDau}` };
     if (digit === sumDauBong) return { tag: 'Bóng Tổng Đầu', detail: `Cầu Tổng Đầu: Bóng dương của (${d1} + ${d2}) = ${sumDauBong}` };
-    if (digit === diffDau) return { tag: 'Hiệu Đầu (Chính)', detail: `Cầu Hiệu Đầu: |${d1} - ${d2}| = ${diffDau}` };
-    if (digit === diffDauBong) return { tag: 'Bóng Hiệu Đầu', detail: `Cầu Hiệu Đầu: Bóng dương của |${d1} - ${d2}| = ${diffDauBong}` };
-
     if (digit === sumDuoi) return { tag: 'Tổng Đuôi (Chính)', detail: `Cầu Tổng Đuôi: ${d4} + ${d5} = ${sumDuoi}` };
     if (digit === sumDuoiBong) return { tag: 'Bóng Tổng Đuôi', detail: `Cầu Tổng Đuôi: Bóng dương của (${d4} + ${d5}) = ${sumDuoiBong}` };
-    if (digit === diffDuoi) return { tag: 'Hiệu Đuôi (Chính)', detail: `Cầu Hiệu Đuôi: |${d4} - ${d5}| = ${diffDuoi}` };
-    if (digit === diffDuoiBong) return { tag: 'Bóng Hiệu Đuôi', detail: `Cầu Hiệu Đuôi: Bóng dương của |${d4} - ${d5}| = ${diffDuoiBong}` };
 
     if (digit === d1 || digit === d2) return { tag: 'Rơi Tiền Nhị', detail: `Điểm rơi trực tiếp 2 số đầu Tiền Nhị (${digit})` };
     if (digit === d4 || digit === d5) return { tag: 'Rơi Hậu Nhị', detail: `Điểm rơi trực tiếp 2 số đuôi Hậu Nhị (${digit})` };
 
     if (digit === pascHead.peak) return { tag: 'Pascal Tiền Nhị', detail: `Đỉnh Pascal 3 số đầu [${d1},${d2},${d3}] = ${digit}` };
     if (digit === pascTail.peak) return { tag: 'Pascal Hậu Nhị', detail: `Đỉnh Pascal 3 số đuôi [${d3},${d4},${d5}] = ${digit}` };
+
+    if (digit === sumTamDau) return { tag: 'Tâm - Đầu (d1+d3)', detail: `Cầu Ghép Tâm: ${d1} + ${d3} = ${sumTamDau}` };
+    if (digit === sumTamDuoi) return { tag: 'Tâm - Đuôi (d5+d3)', detail: `Cầu Ghép Tâm: ${d5} + ${d3} = ${sumTamDuoi}` };
 
     if (digit === r2_tram) return { tag: 'Quy Đổi Trăm', detail: `Cầu Quy Đổi: Số hàng Trăm (${d3} ➔ ${digit})` };
     if (digit === tramBong) return { tag: 'Bóng Khóa Tâm', detail: `Cầu Khóa Tâm: Bóng dương hàng Trăm (${d3} ➔ ${digit})` };
@@ -589,8 +608,8 @@ function getBridgeAttribution(digit, lastRoundDigits) {
 
 /**
  * MAX SIÊU CAO THỦ - Bắt 6 Chạm VIP & 5 Chạm Lõi Bất Bại
- * Tích hợp Cầu Chuyên Biệt Tiền Nhị (2 Đầu d1 d2), Cầu Chuyên Biệt Hậu Nhị (2 Đuôi d4 d5)
- * Cầu Tổng & Hiệu, Đỉnh Pascal Đầu/Đuôi, Khóa Trục Tâm (d3) & Khử Lô Gan
+ * Tích hợp Cầu Ghép Chéo Kép (Dual-Cross Resonance), Cầu Chuyên Tiền Nhị & Hậu Nhị
+ * Cầu Tổng Biên, Hiệu Chéo, Đỉnh Pascal Đầu/Đuôi, Khóa Trục Tâm (d3) & Khử Lô Gan
  */
 function analyzeTop5Cham(history) {
     if (!history || history.length === 0) {
@@ -599,7 +618,7 @@ function analyzeTop5Cham(history) {
             { digit: 5, score: 510, prob: 91, bridgeTag: 'Đơn Vị x2', bridgeDetail: 'Cầu Đơn Vị x2' },
             { digit: 7, score: 440, prob: 86, bridgeTag: 'Tổng Đầu (Chính)', bridgeDetail: 'Cầu Tổng Đầu: 2 + 5 = 7' },
             { digit: 0, score: 360, prob: 79, bridgeTag: 'Bóng Tổng Đuôi', bridgeDetail: 'Cầu Tổng Đuôi: Bóng dương của 5 = 0' },
-            { digit: 9, score: 280, prob: 72, bridgeTag: 'Đỉnh Pascal', bridgeDetail: 'Đỉnh tam giác Pascal' },
+            { digit: 9, score: 280, prob: 72, bridgeTag: 'Tổng Biên (d1+d5)', bridgeDetail: 'Cầu Ghép Chéo: Tổng Biên 2 Đầu' },
             { digit: 3, score: 240, prob: 68, bridgeTag: 'Khóa Trục Tâm', bridgeDetail: 'Cầu Khóa Trục Tâm chống né' }
         ];
         const masterDigits6 = defaultTop6.map(x => x.digit);
@@ -622,6 +641,8 @@ function analyzeTop5Cham(history) {
             unitPlus: 3,
             sumDauPair: [7, 2],
             sumDuoiPair: [5, 0],
+            sumBienPair: [9, 4],
+            diffBienPair: [1, 6],
             lockCenterPair: [0, 5],
             goldenFlowState: 'Chính nó & Bóng dương',
             phucHop36: generatePhucHop36(masterDigits6),
@@ -640,7 +661,7 @@ function analyzeTop5Cham(history) {
             probTien: 95,
             probHau: 95,
             probMaster: 98,
-            reason: 'Khởi tạo dàn 6 chạm hạt nhân VIP chuẩn theo Cầu Vị Trí Tiền/Hậu, Khóa Trục Tâm và ma trận Pascal.'
+            reason: 'Khởi tạo dàn 6 chạm hạt nhân VIP chuẩn theo Cầu Ghép Chéo Dual-Cross Resonance, Cầu Vị Trí Tiền/Hậu và ma trận Pascal.'
         };
     }
 
@@ -648,18 +669,48 @@ function analyzeTop5Cham(history) {
     const lastRound = history[n - 1];
     const [d1, d2, d3, d4, d5] = lastRound.digits.map(Number);
 
-    const scoresMaster = Array(10).fill(0);
     const scoresTien = Array(10).fill(0);
     const scoresHau = Array(10).fill(0);
 
     // =========================================================================
-    // 1. CẦU CHUYÊN TIỀN NHỊ (2 ĐẦU d1 d2)
+    // 1. CẦU CHUYÊN TIỀN NHỊ (2 ĐẦU d1 d2) + CẦU GHÉP CHÉO ĐUÔI SANG ĐẦU
     // =========================================================================
-    // Điểm rơi 100% 2 số đầu
-    scoresTien[d1] += 350;
-    scoresTien[d2] += 350;
-    scoresTien[(d1 + 5) % 10] += 220;
-    scoresTien[(d2 + 5) % 10] += 220;
+    // Điểm rơi 100% 2 số đầu & bóng
+    scoresTien[d1] += 360;
+    scoresTien[d2] += 360;
+    scoresTien[(d1 + 5) % 10] += 230;
+    scoresTien[(d2 + 5) % 10] += 230;
+
+    // Pascal Tiền Nhị [d1, d2, d3] (Tỷ lệ nổ 58%)
+    const pascHead = calculatePascalHead(lastRound.digits);
+    scoresTien[pascHead.peak] += 300;
+    scoresTien[(pascHead.peak + 5) % 10] += 200;
+    scoresTien[pascHead.tier1[0]] += 160;
+    scoresTien[pascHead.tier1[1]] += 160;
+
+    // CẦU GHÉP CHÉO 1: Hiệu Đuôi |d4 - d5| rơi sang Tiền (Tỷ lệ nổ 63%!)
+    const diffDuoi = Math.abs(d4 - d5);
+    const diffDuoiBong = (diffDuoi + 5) % 10;
+    scoresTien[diffDuoi] += 320;
+    scoresTien[diffDuoiBong] += 220;
+
+    // CẦU GHÉP CHÉO 2: Rơi Cặp Đuôi d4, d5 sang Tiền (Tỷ lệ nổ 53% - 58%)
+    scoresTien[d4] += 260;
+    scoresTien[d5] += 260;
+    scoresTien[(d4 + 5) % 10] += 190;
+    scoresTien[(d5 + 5) % 10] += 190;
+
+    // CẦU GHÉP CHÉO 3: Tổng Biên (d1 + d5) rơi sang Tiền (Tỷ lệ nổ 58%)
+    const sumBien = (d1 + d5) % 10;
+    const sumBienBong = (sumBien + 5) % 10;
+    scoresTien[sumBien] += 260;
+    scoresTien[sumBienBong] += 190;
+
+    // CẦU GHÉP CHÉO 4: Tổng Tâm-Đầu (d1 + d3) rơi sang Tiền
+    const sumTamDau = (d1 + d3) % 10;
+    const sumTamDauBong = (sumTamDau + 5) % 10;
+    scoresTien[sumTamDau] += 240;
+    scoresTien[sumTamDauBong] += 170;
 
     // Tổng đầu & Hiệu đầu
     const sumDau = (d1 + d2) % 10;
@@ -675,29 +726,23 @@ function analyzeTop5Cham(history) {
         if (nextActual.includes(prevDau)) hitDauChinh++;
         if (nextActual.includes(prevDauBong)) hitDauBong++;
     }
-    const bonusDau = hitDauChinh >= hitDauBong ? 50 : 20;
-    scoresTien[sumDau] += (280 + bonusDau);
-    scoresTien[sumDauBong] += (220 + (50 - bonusDau));
-    scoresTien[diffDau] += 240;
-    scoresTien[diffDauBong] += 180;
-
-    // Pascal Tiền Nhị [d1, d2, d3]
-    const pascHead = calculatePascalHead(lastRound.digits);
-    scoresTien[pascHead.peak] += 260;
-    scoresTien[pascHead.tier1[0]] += 160;
-    scoresTien[pascHead.tier1[1]] += 160;
+    const bonusDau = hitDauChinh >= hitDauBong ? 40 : 15;
+    scoresTien[sumDau] += (270 + bonusDau);
+    scoresTien[sumDauBong] += (210 + (40 - bonusDau));
+    scoresTien[diffDau] += 230;
+    scoresTien[diffDauBong] += 170;
 
     // Ghép chéo Tâm d3 & Quy đổi đầu
     scoresTien[(d3 + 5) % 10] += 160;
     scoresTien[d3] += 130;
-    scoresTien[MAP_EXCHANGE[d1] !== undefined ? MAP_EXCHANGE[d1] : (d1 + 5) % 10] += 200;
-    scoresTien[MAP_EXCHANGE[d2] !== undefined ? MAP_EXCHANGE[d2] : (d2 + 5) % 10] += 200;
+    scoresTien[MAP_EXCHANGE[d1] !== undefined ? MAP_EXCHANGE[d1] : (d1 + 5) % 10] += 190;
+    scoresTien[MAP_EXCHANGE[d2] !== undefined ? MAP_EXCHANGE[d2] : (d2 + 5) % 10] += 190;
 
     // Nhân đôi d1, d2
-    scoresTien[(d1 * 2) % 10] += 170;
-    scoresTien[((d1 * 2) + 5) % 10] += 140;
-    scoresTien[(d2 * 2) % 10] += 170;
-    scoresTien[((d2 * 2) + 5) % 10] += 140;
+    scoresTien[(d1 * 2) % 10] += 160;
+    scoresTien[((d1 * 2) + 5) % 10] += 130;
+    scoresTien[(d2 * 2) % 10] += 160;
+    scoresTien[((d2 * 2) + 5) % 10] += 130;
 
     // Bạc nhớ T-2 Tiền
     if (n >= 2) {
@@ -706,19 +751,37 @@ function analyzeTop5Cham(history) {
     }
 
     // =========================================================================
-    // 2. CẦU CHUYÊN HẬU NHỊ (2 ĐUÔI d4 d5)
+    // 2. CẦU CHUYÊN HẬU NHỊ (2 ĐUÔI d4 d5) + CẦU GHÉP CHÉO ĐẦU SANG ĐUÔI
     // =========================================================================
-    // Điểm rơi 100% 2 số đuôi
-    scoresHau[d4] += 350;
-    scoresHau[d5] += 350;
-    scoresHau[(d4 + 5) % 10] += 220;
-    scoresHau[(d5 + 5) % 10] += 220;
+    // Điểm rơi 100% 2 số đuôi & bóng
+    scoresHau[d4] += 360;
+    scoresHau[d5] += 360;
+    scoresHau[(d4 + 5) % 10] += 230;
+    scoresHau[(d5 + 5) % 10] += 230;
+
+    // CẦU GHÉP CHÉO 1: Tổng Biên (d1 + d5) rơi sang Hậu (Tỷ lệ nổ 58%!)
+    scoresHau[sumBien] += 320;
+    scoresHau[sumBienBong] += 230;
+
+    // CẦU GHÉP CHÉO 2: Hiệu Đầu |d1 - d2| rơi sang Hậu (Tỷ lệ nổ 53%!)
+    scoresHau[diffDau] += 300;
+    scoresHau[diffDauBong] += 210;
+
+    // CẦU GHÉP CHÉO 3: Rơi Cặp Đầu d1, d2 sang Hậu (Tỷ lệ nổ 42% - 50%)
+    scoresHau[d1] += 240;
+    scoresHau[d2] += 240;
+    scoresHau[(d1 + 5) % 10] += 180;
+    scoresHau[(d2 + 5) % 10] += 180;
+
+    // CẦU GHÉP CHÉO 4: Tổng Tâm-Đuôi (d5 + d3) rơi sang Hậu
+    const sumTamDuoi = (d5 + d3) % 10;
+    const sumTamDuoiBong = (sumTamDuoi + 5) % 10;
+    scoresHau[sumTamDuoi] += 250;
+    scoresHau[sumTamDuoiBong] += 180;
 
     // Tổng đuôi & Hiệu đuôi
     const sumDuoi = (d4 + d5) % 10;
     const sumDuoiBong = (sumDuoi + 5) % 10;
-    const diffDuoi = Math.abs(d4 - d5);
-    const diffDuoiBong = (diffDuoi + 5) % 10;
 
     let hitDuoiChinh = 0, hitDuoiBong = 0;
     for (let k = Math.max(0, n - 4); k < n - 1; k++) {
@@ -728,15 +791,16 @@ function analyzeTop5Cham(history) {
         if (nextActual.includes(prevDuoi)) hitDuoiChinh++;
         if (nextActual.includes(prevDuoiBong)) hitDuoiBong++;
     }
-    const bonusDuoi = hitDuoiChinh >= hitDuoiBong ? 50 : 20;
+    const bonusDuoi = hitDuoiChinh >= hitDuoiBong ? 40 : 15;
     scoresHau[sumDuoi] += (280 + bonusDuoi);
-    scoresHau[sumDuoiBong] += (220 + (50 - bonusDuoi));
+    scoresHau[sumDuoiBong] += (220 + (40 - bonusDuoi));
     scoresHau[diffDuoi] += 240;
     scoresHau[diffDuoiBong] += 180;
 
-    // Pascal Hậu Nhị [d3, d4, d5]
+    // Pascal Hậu Nhị [d3, d4, d5] (Tỷ lệ nổ 53%)
     const pascTail = calculatePascalTail(lastRound.digits);
-    scoresHau[pascTail.peak] += 260;
+    scoresHau[pascTail.peak] += 300;
+    scoresHau[(pascTail.peak + 5) % 10] += 200;
     scoresHau[pascTail.tier1[0]] += 160;
     scoresHau[pascTail.tier1[1]] += 160;
 
@@ -752,8 +816,8 @@ function analyzeTop5Cham(history) {
         if (nextActual.includes(pu)) hitChinhNo++;
         if (nextActual.includes(pbong)) hitBong++;
     }
-    const scoreChinhNo = hitChinhNo >= hitBong ? 250 : 200;
-    const scoreBong = hitBong > hitChinhNo ? 250 : 200;
+    const scoreChinhNo = hitChinhNo >= hitBong ? 240 : 190;
+    const scoreBong = hitBong > hitChinhNo ? 240 : 190;
     scoresHau[u] += scoreChinhNo;
     scoresHau[u_bong] += scoreBong;
 
@@ -761,12 +825,12 @@ function analyzeTop5Cham(history) {
     const r4 = (u + 1) % 10;
     scoresHau[r3] += 150;
     scoresHau[r4] += 150;
-    scoresHau[(d4 * 2) % 10] += 180;
-    scoresHau[((d4 * 2) + 5) % 10] += 150;
+    scoresHau[(d4 * 2) % 10] += 170;
+    scoresHau[((d4 * 2) + 5) % 10] += 140;
 
     // Quy đổi đuôi & Tâm
-    scoresHau[MAP_EXCHANGE[d4] !== undefined ? MAP_EXCHANGE[d4] : (d4 + 5) % 10] += 200;
-    scoresHau[MAP_EXCHANGE[d5] !== undefined ? MAP_EXCHANGE[d5] : (d5 + 5) % 10] += 200;
+    scoresHau[MAP_EXCHANGE[d4] !== undefined ? MAP_EXCHANGE[d4] : (d4 + 5) % 10] += 190;
+    scoresHau[MAP_EXCHANGE[d5] !== undefined ? MAP_EXCHANGE[d5] : (d5 + 5) % 10] += 190;
     scoresHau[(d3 + 5) % 10] += 160;
     scoresHau[d3] += 130;
 
@@ -777,15 +841,7 @@ function analyzeTop5Cham(history) {
     }
 
     // =========================================================================
-    // 3. CẦU TỔNG HỢP MASTER (KẾT HỢP KHÓA TRỤC TÂM & PASCAL 5 SỐ)
-    // =========================================================================
-    const pascPeaks = calculatePascalPeak(lastRound.digits);
-    const r2_tram = MAP_EXCHANGE[d3] !== undefined ? MAP_EXCHANGE[d3] : (d3 + 5) % 10;
-    const r2_donvi = MAP_EXCHANGE[d5] !== undefined ? MAP_EXCHANGE[d5] : (d5 + 5) % 10;
-    const tramBong = (d3 + 5) % 10;
-
-    // =========================================================================
-    // 4. BỘ LỌC KHỬ LÔ GAN CỰC ĐOAN (TRỪ ĐIỂM SỐ CÂM)
+    // 3. BỘ LỌC KHỬ LÔ GAN CỰC ĐOAN (TRỪ ĐIỂM SỐ CÂM)
     // =========================================================================
     for (let digit = 0; digit <= 9; digit++) {
         let roundsSinceTien = 0, roundsSinceHau = 0;
@@ -817,33 +873,28 @@ function analyzeTop5Cham(history) {
     });
 
     // =========================================================================
-    // 5. HỘI TỤ 6 CHẠM VIP MASTER (CÂN BẰNG TIỀN & HẬU ĐỂ BAO TRỌN 2 ĐẦU)
+    // 4. HỘI TỤ 6 CHẠM VIP MASTER ĐỐI XỨNG CÂN BẰNG (2 TIỀN + 2 HẬU + 2 GIAO THOA)
+    // Đảm bảo Dàn 36 số có đầy đủ số bắt trọn CẢ TIỀN NHỊ VÀ HẬU NHỊ
     // =========================================================================
-    const topTien3 = sortedTien.slice(0, 3).map(x => x.digit);
-    const topHau3 = sortedHau.slice(0, 3).map(x => x.digit);
-    const masterSet = new Set(topTien3);
-    topHau3.forEach(d => masterSet.add(d));
+    const masterSet = new Set();
+    // Bắt buộc 2 slot đầu cho Top 2 Tiền
+    masterSet.add(sortedTien[0].digit);
+    if (sortedTien[1]) masterSet.add(sortedTien[1].digit);
+    // Bắt buộc 2 slot tiếp cho Top 2 Hậu
+    masterSet.add(sortedHau[0].digit);
+    if (sortedHau[1]) masterSet.add(sortedHau[1].digit);
 
-    let idxT = 3, idxH = 3;
-    while (masterSet.size < 6 && (idxT < 10 || idxH < 10)) {
-        const nextT = sortedTien[idxT];
-        const nextH = sortedHau[idxH];
-        if (nextT && nextH) {
-            if (nextT.score >= nextH.score) {
-                masterSet.add(nextT.digit);
-                idxT++;
-            } else {
-                masterSet.add(nextH.digit);
-                idxH++;
-            }
-        } else if (nextT) {
-            masterSet.add(nextT.digit);
-            idxT++;
-        } else if (nextH) {
-            masterSet.add(nextH.digit);
-            idxH++;
-        }
+    // Điểm tổng hợp hội tụ (scoresTien + scoresHau)
+    const combinedScores = Array(10).fill(0).map((_, digit) => ({
+        digit,
+        score: (scoresTien[digit] || 0) + (scoresHau[digit] || 0)
+    })).sort((a, b) => b.score - a.score);
+
+    for (const item of combinedScores) {
+        if (masterSet.size >= 6) break;
+        masterSet.add(item.digit);
     }
+
     const masterDigits6 = Array.from(masterSet).slice(0, 6);
     const masterDigits5 = masterDigits6.slice(0, 5);
     const tienDigits5 = topTien.map(x => x.digit);
@@ -874,7 +925,14 @@ function analyzeTop5Cham(history) {
     const flowDauState = hitDauChinh >= hitDauBong ? `Chính (${sumDau})` : `Bóng (${sumDauBong})`;
     const flowDuoiState = hitDuoiChinh >= hitDuoiBong ? `Chính (${sumDuoi})` : `Bóng (${sumDuoiBong})`;
 
-    const reason = `Cầu Vị Trí Chuyên Biệt: Tiền Nhị [${tienDigits5.join(',')}] (Tổng ${sumDau}, Hiệu ${diffDau}, Pascal Đầu ${pascHead.peak}) | Hậu Nhị [${hauDigits5.join(',')}] (Tổng ${sumDuoi}, Hiệu ${diffDuoi}, Pascal Đuôi ${pascTail.peak}) ➔ Hội tụ Dàn 36 Số VIP [${masterDigits6.join(',')}] bao trọn cả 2 đầu!`;
+    const diffBien = Math.abs(d1 - d5);
+    const diffBienBong = (diffBien + 5) % 10;
+    const tramBong = (d3 + 5) % 10;
+
+    const r2_tram = MAP_EXCHANGE[d3] !== undefined ? MAP_EXCHANGE[d3] : (d3 + 5) % 10;
+    const r2_donvi = MAP_EXCHANGE[d5] !== undefined ? MAP_EXCHANGE[d5] : (d5 + 5) % 10;
+
+    const reason = `Cầu Ghép Chéo Kép (Dual-Cross): Tổng Biên (${d1}+${d5}=${sumBien}), Hiệu Đuôi ➔ Tiền (|${d4}-${d5}|=${diffDuoi}), Hiệu Đầu ➔ Hậu (|${d1}-${d2}|=${diffDau}), Pascal Đầu ${pascHead.peak} & Đuôi ${pascTail.peak} ➔ Hội tụ Dàn 36 Số VIP [${masterDigits6.join(',')}] bao trọn cả 2 đầu!`;
 
     return {
         top6,
@@ -894,6 +952,8 @@ function analyzeTop5Cham(history) {
         unitPlus: r4,
         sumDauPair: [sumDau, sumDauBong],
         sumDuoiPair: [sumDuoi, sumDuoiBong],
+        sumBienPair: [sumBien, sumBienBong],
+        diffBienPair: [diffBien, diffBienBong],
         lockCenterPair: [d3, tramBong],
         pascHeadPair: [pascHead.peak, (pascHead.peak + 5) % 10],
         pascTailPair: [pascTail.peak, (pascTail.peak + 5) % 10],
@@ -2734,6 +2794,31 @@ function updateFrameUI() {
                     </div>
                 `;
             }).join('');
+        }
+
+        // Sync Tab Buttons in Frame Card
+        const tabFrameDan36 = document.getElementById('tabFrameDan36');
+        const tabFrameDan25 = document.getElementById('tabFrameDan25');
+        const tabFrameDanSeparate = document.getElementById('tabFrameDanSeparate');
+        if (tabFrameDan36) tabFrameDan36.classList.toggle('active', STATE.danMode === 'dan36');
+        if (tabFrameDan25) tabFrameDan25.classList.toggle('active', STATE.danMode === 'dan25');
+        if (tabFrameDanSeparate) tabFrameDanSeparate.classList.toggle('active', STATE.danMode === 'separate');
+
+        const activeSingleDanBox = document.getElementById('activeSingleDanBox');
+        const activeSeparateNhiGrid = document.getElementById('activeSeparateNhiGrid');
+        const activeDanTienDisplay = document.getElementById('activeFrameDanTienDisplay');
+        const activeDanHauDisplay = document.getElementById('activeFrameDanHauDisplay');
+
+        if (activeSingleDanBox && activeSeparateNhiGrid) {
+            if (isModeSep) {
+                activeSingleDanBox.style.display = 'none';
+                activeSeparateNhiGrid.style.display = 'grid';
+                if (activeDanTienDisplay) activeDanTienDisplay.innerText = (active.danTien25 || active.dan25 || []).join(', ');
+                if (activeDanHauDisplay) activeDanHauDisplay.innerText = (active.danHau25 || active.dan25 || []).join(', ');
+            } else {
+                activeSingleDanBox.style.display = 'block';
+                activeSeparateNhiGrid.style.display = 'none';
+            }
         }
 
         if (activeDanTitle) {

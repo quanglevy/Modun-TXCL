@@ -5,36 +5,48 @@
 
 ---
 
-## 1. THUẬT TOÁN BẮT CẦU VỊ TRÍ CHUYÊN BIỆT TIỀN NHỊ & HẬU NHỊ (POSITION-SPECIFIC 2D BRIDGE)
+## 1. THUẬT TOÁN BẮT CẦU VỊ TRÍ CHUYÊN BIỆT TIỀN NHỊ & HẬU NHỊ KẾT HỢP GHÉP CHÉO KÉP (DUAL-CROSS RESONANCE 2D BRIDGE)
 
-Hệ thống bắt Chạm VIP và Dàn số từ kết quả kỳ quay trước thông qua **Bộ 2 Cầu Chuyên Biệt Vị Trí kết hợp Cân Bằng Hội Tụ 2 Đầu, Khóa Trục Tâm ($d_3$), Pascal Rút Gọn và Khử Lô Gan**:
+Hệ thống bắt Chạm VIP và Dàn số từ kết quả kỳ quay trước thông qua **Bộ Cầu Chuyên Biệt Vị Trí kết hợp Cầu Ghép Chéo Kép (Dual-Cross Resonance), Cân Bằng Hội Tụ 2+2+2, Khóa Trục Tâm ($d_3$), Pascal Rút Gọn và Khử Lô Gan**:
 
-### A. Cầu Chuyên Tiền Nhị (2 Đầu $d_1 d_2$):
-1. **Điểm Rơi Trực Tiếp Cặp Đầu:** Bắt trọn cặp $d_1, d_2$ kỳ trước và bóng dương $(d_1+5)\pmod{10}, (d_2+5)\pmod{10}$.
-2. **Cầu Tổng Đầu & Hiệu Đầu:**
-   - Tổng đầu: $(d_1 + d_2) \pmod{10}$ và bóng dương $((d_1 + d_2 + 5) \pmod{10})$.
+### A. Cầu Chuyên Tiền Nhị (2 Đầu $d_1 d_2$) & Ghép Chéo Đuôi ➔ Đầu:
+1. **Điểm Rơi Trực Tiếp Cặp Đầu:** Bắt trọn cặp $d_1, d_2$ kỳ trước (+360đ) và bóng dương $(d_1+5)\pmod{10}, (d_2+5)\pmod{10}$ (+230đ).
+2. **Cầu Ghép Chéo Hiệu Đuôi ➔ Tiền Nhị (Dual-Cross 1 - Tỷ lệ nổ 63%):** $|d_4 - d_5|$ (+320đ) và bóng dương $(|d_4 - d_5| + 5) \pmod{10}$ (+220đ).
+3. **Cầu Ghép Chéo Rơi Đuôi ➔ Tiền Nhị (Dual-Cross 2):** $d_4, d_5$ (+260đ) và bóng dương (+190đ).
+4. **Cầu Ghép Chéo Tổng Biên (Dual-Cross 3 - Tỷ lệ nổ 58%):** $(d_1 + d_5) \pmod{10}$ (+260đ) và bóng dương (+190đ).
+5. **Cầu Ghép Chéo Tâm - Đầu (Dual-Cross 4):** $(d_1 + d_3) \pmod{10}$ (+240đ) và bóng dương (+170đ).
+6. **Cầu Tổng Đầu & Hiệu Đầu:**
+   - Tổng đầu: $(d_1 + d_2) \pmod{10}$ và bóng dương $((d_1 + d_2 + 5) \pmod{10})$ kèm bonus nhịp nổ thông.
    - Hiệu đầu: $|d_1 - d_2|$ và bóng dương $(|d_1 - d_2| + 5) \pmod{10}$.
-3. **Cầu Ghép Chéo Đầu - Tâm ($d_1, d_2, d_3$):** Khóa trục tâm rơi đầu ($d_3$ và $(d_3+5)\pmod{10}$), cặp quy đổi đầu (`MAP_EXCHANGE`).
-4. **Pascal Tiền Nhị:** Đỉnh tam giác Pascal rút gọn riêng cho 3 số đầu $[d_1, d_2, d_3]$.
-5. **Nhân Đôi Hàng Đầu:** $(d_1 \times 2) \pmod{10}$, $(d_2 \times 2) \pmod{10}$ và bóng dương.
-6. **Bạc Nhớ & Khử Gan Tiền Nhị:** Quét nhịp xuất hiện riêng tại vị trí Tiền Nhị $d_1 d_2$.
+7. **Pascal Tiền Nhị:** Đỉnh tam giác Pascal rút gọn riêng cho 3 số đầu $[d_1, d_2, d_3]$ (Đỉnh +300đ, Bóng +200đ, Tầng 1 +160đ).
+8. **Quy Đổi Đầu & Khóa Trục Tâm:** Quy đổi `MAP_EXCHANGE` ($d_1, d_2$), bóng tâm $(d_3+5)\pmod{10}$, tâm $d_3$.
+9. **Nhân Đôi Hàng Đầu:** $(d_1 \times 2) \pmod{10}$, $(d_2 \times 2) \pmod{10}$ và bóng dương.
+10. **Bạc Nhớ & Khử Gan Tiền Nhị:** Quét nhịp xuất hiện riêng tại vị trí Tiền Nhị $d_1 d_2$ (Trừ 160đ cho số câm $\ge 6$ kỳ).
 
-### B. Cầu Chuyên Hậu Nhị (2 Đuôi $d_4 d_5$):
-1. **Điểm Rơi Trực Tiếp Cặp Đuôi:** Bắt trọn cặp $d_4, d_5$ kỳ trước và bóng dương $(d_4+5)\pmod{10}, (d_5+5)\pmod{10}$.
-2. **Cầu Tổng Đuôi & Hiệu Đuôi:**
-   - Tổng đuôi: $(d_4 + d_5) \pmod{10}$ và bóng dương $((d_4 + d_5 + 5) \pmod{10})$.
+### B. Cầu Chuyên Hậu Nhị (2 Đuôi $d_4 d_5$) & Ghép Chéo Đầu ➔ Đuôi:
+1. **Điểm Rơi Trực Tiếp Cặp Đuôi:** Bắt trọn cặp $d_4, d_5$ kỳ trước (+360đ) và bóng dương $(d_4+5)\pmod{10}, (d_5+5)\pmod{10}$ (+230đ).
+2. **Cầu Ghép Chéo Tổng Biên ➔ Hậu Nhị (Dual-Cross 1 - Tỷ lệ nổ 58%):** $(d_1 + d_5) \pmod{10}$ (+320đ) và bóng dương (+230đ).
+3. **Cầu Ghép Chéo Hiệu Đầu ➔ Hậu Nhị (Dual-Cross 2 - Tỷ lệ nổ 53%):** $|d_1 - d_2|$ (+300đ) và bóng dương $(|d_1 - d_2| + 5) \pmod{10}$ (+210đ).
+4. **Cầu Ghép Chéo Rơi Đầu ➔ Hậu Nhị (Dual-Cross 3):** $d_1, d_2$ (+240đ) và bóng dương (+180đ).
+5. **Cầu Ghép Chéo Tâm - Đuôi (Dual-Cross 4):** $(d_5 + d_3) \pmod{10}$ (+250đ) và bóng dương (+180đ).
+6. **Cầu Tổng Đuôi & Hiệu Đuôi:**
+   - Tổng đuôi: $(d_4 + d_5) \pmod{10}$ và bóng dương $((d_4 + d_5 + 5) \pmod{10})$ kèm bonus nhịp nổ thông.
    - Hiệu đuôi: $|d_4 - d_5|$ và bóng dương $(|d_4 - d_5| + 5) \pmod{10}$.
-3. **Cầu Đơn Vị $\times 2$ kết hợp Hàng Chục $\times 2$:** $(d_5 \times 2) \pmod{10}$, $(d_4 \times 2) \pmod{10}$, bóng dương và biên $\pm 1$.
-4. **Pascal Hậu Nhị:** Đỉnh tam giác Pascal rút gọn riêng cho 3 số đuôi $[d_3, d_4, d_5]$.
-5. **Khóa Trục Tâm rơi đuôi & Quy đổi đuôi:** Khóa tâm $d_3$ và bóng, cặp quy đổi đuôi (`MAP_EXCHANGE`).
-6. **Bạc Nhớ & Khử Gan Hậu Nhị:** Quét nhịp xuất hiện riêng tại vị trí Hậu Nhị $d_4 d_5$.
+7. **Cầu Đơn Vị $\times 2$ kết hợp Hàng Chục $\times 2$:** $(d_5 \times 2) \pmod{10}$, $(d_4 \times 2) \pmod{10}$, bóng dương và biên $\pm 1$.
+8. **Pascal Hậu Nhị:** Đỉnh tam giác Pascal rút gọn riêng cho 3 số đuôi $[d_3, d_4, d_5]$ (Đỉnh +300đ, Bóng +200đ, Tầng 1 +160đ).
+9. **Quy Đổi Đuôi & Khóa Trục Tâm:** Quy đổi `MAP_EXCHANGE` ($d_4, d_5$), bóng tâm $(d_3+5)\pmod{10}$, tâm $d_3$.
+10. **Bạc Nhớ & Khử Gan Hậu Nhị:** Quét nhịp xuất hiện riêng tại vị trí Hậu Nhị $d_4 d_5$ (Trừ 160đ cho số câm $\ge 6$ kỳ).
 
-### C. Cơ Chế Hội Tụ 6 Chạm VIP Master (Dàn 36 Số VIP Bất Bại):
-- Tự động lấy **Top 3 Chạm mạnh nhất của Tiền Nhị $\cup$ Top 3 Chạm mạnh nhất của Hậu Nhị** (kèm cơ chế bù trừ điểm cao nhất), tạo thành **Top 6 Chạm VIP cân bằng trọn vẹn cả 2 đầu**, đảm bảo dàn 36 số luôn bao trọn cả cặp $(d_1 d_2)$ lẫn $(d_4 d_5)$.
+### C. Cơ Chế Hội Tụ Cân Bằng 2+2+2 Master (Dàn 36 Số VIP Bất Bại Ăn Cả 2 Đầu):
+- **Cơ chế Phân Bổ Slot Bắt Buộc (Guaranteed 2+2+2 Allocation):**
+  - **Slot 1 - 2 (2 Số Đầu):** Luôn lấy Top 2 Chạm mạnh nhất của Tiền Nhị ($d_1 d_2$).
+  - **Slot 3 - 4 (2 Số Giữa):** Luôn lấy Top 2 Chạm mạnh nhất của Hậu Nhị ($d_4 d_5$).
+  - **Slot 5 - 6 (2 Số Cuối):** Lấy 2 Chạm có tổng điểm liên kết giao thoa cao nhất $(\text{scoresTien} + \text{scoresHau})$ chưa có trong 4 slot đầu.
+- **Mục Tiêu:** Triệt tiêu hoàn toàn hiện tượng "lệch 1 đầu", giúp Dàn 36 Số có xác suất ăn trọn cả 2 đầu Tiền Nhị và Hậu Nhị cao vượt trội.
 
 ### 3 Chế Độ Dàn Nuôi (Dàn Mode Selector):
-- **Chế độ 1: DÀN 36 SỐ BẤT BẠI (6 Chạm VIP Hội Tụ - Mặc định khuyên dùng ★):** 
-  - Ghép từ 6 chạm hội tụ (3 Tiền + 3 Hậu) thành Dàn 36 số bao trọn kép cho cả 2 đầu.
+- **Chế độ 1: DÀN 36 SỐ BẤT BẠI (6 Chạm VIP Hội Tụ 2+2+2 - Mặc định khuyên dùng ★):** 
+  - Ghép từ 6 chạm hội tụ (2 Tiền + 2 Hậu + 2 Giao Thoa) thành Dàn 36 số bao trọn kép cho cả 2 đầu.
 - **Chế độ 2: DÀN 25 SỐ (5 Chạm Lõi):**
   - Ghép từ Top 5 chạm thành Dàn 25 số bao trọn kép truyền thống.
 - **Chế độ 3: TÁCH RIÊNG TIỀN NHỊ & HẬU NHỊ (2 Dàn 25 Số Chuyên Biệt):**
