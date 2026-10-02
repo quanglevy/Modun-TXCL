@@ -18,7 +18,7 @@
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="apple-touch-icon" href="icon.svg">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=4.8">
+    <link rel="stylesheet" href="style.css?v=5.0">
 </head>
 <body>
     <div class="app-container">
@@ -278,6 +278,19 @@
                                         <div class="mini-dot dot-empty">-</div>
                                     </div>
                                 </div>
+
+                                <!-- KIẾN NGHỊ VÀO TIỀN / ĐÁNH HAY NGẮM TÀI XỈU -->
+                                <div class="pred-action-advice" id="predTxActionBox">
+                                    <div class="action-badge-row">
+                                        <span class="action-traffic-badge signal-green" id="predTxActionBadge">
+                                            <i class="fa-solid fa-circle-check"></i> NÊN ĐÁNH
+                                        </span>
+                                        <span class="action-sub-pattern" id="predTxPatternBadge">Cầu Chuẩn</span>
+                                    </div>
+                                    <div class="action-advice-desc" id="predTxAdviceText">
+                                        Cầu đang chạy nhịp chuẩn đẹp. Khuyến nghị vào tiền theo kế hoạch.
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- CHẴN / LẺ PREDICTION -->
@@ -308,12 +321,25 @@
                                         <div class="mini-dot dot-empty">-</div>
                                     </div>
                                 </div>
+
+                                <!-- KIẾN NGHỊ VÀO TIỀN / ĐÁNH HAY NGẮM CHẴN LẺ -->
+                                <div class="pred-action-advice" id="predClActionBox">
+                                    <div class="action-badge-row">
+                                        <span class="action-traffic-badge signal-green" id="predClActionBadge">
+                                            <i class="fa-solid fa-circle-check"></i> NÊN ĐÁNH
+                                        </span>
+                                        <span class="action-sub-pattern" id="predClPatternBadge">Cầu Chuẩn</span>
+                                    </div>
+                                    <div class="action-advice-desc" id="predClAdviceText">
+                                        Cầu đang chạy nhịp chuẩn đẹp. Khuyến nghị vào tiền theo kế hoạch.
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- BẮT 5 CHẠM VÀNG & GHÉP DÀN 25 SỐ VIP (ĐÁNH CHUNG TIỀN NHỊ & HẬU NHỊ) -->
+                            <!-- BẮT CHẠM VÀNG & GHÉP DÀN SỐ VIP (CHỌN CHẾ ĐỘ DÀN 36 / DÀN 25 / TÁCH RIÊNG) -->
                             <div class="pred-box pred-box-cham" id="predChamBox">
                                 <div class="pred-label pred-label-cham-flex">
-                                    <span><i class="fa-solid fa-crown text-gold"></i> BẮT 5 CHẠM VÀNG & GHÉP DÀN 25 SỐ VIP (ĐÁNH CHUNG TIỀN NHỊ & HẬU NHỊ)</span>
+                                    <span><i class="fa-solid fa-crown text-gold"></i> BẮT CHẠM VÀNG & DÀN SỐ VIP NUÔI KHUNG (ĐÁNH TIỀN & HẬU NHỊ)</span>
                                     <div class="cham-label-badges-row">
                                         <span class="pred-frame-range-pill" id="predChamRangeBadge">
                                             <i class="fa-solid fa-crosshairs text-cyan"></i> Nuôi Khung 3 Kỳ: <b class="text-green" id="predChamRangeText">Kỳ 101 ➔ Kỳ 103</b> <small id="predChamTayText" class="text-gold">(Tay 1/3)</small>
@@ -327,9 +353,25 @@
                                     </div>
                                 </div>
 
+                                <!-- CHỌN CHẾ ĐỘ DÀN (DÀN 36 SỐ BẤT BẠI / DÀN 25 SỐ / TÁCH TIỀN & HẬU) -->
+                                <div class="dan-mode-tabs-wrap">
+                                    <div class="dan-mode-tabs" id="danModeTabs">
+                                        <button type="button" class="dan-mode-tab-btn active" id="tabDan36" onclick="setDanMode('dan36')">
+                                            <i class="fa-solid fa-gem text-gold"></i> DÀN 36 SỐ BẤT BẠI (6 Chạm VIP) <span class="tab-recommend-badge">Khuyên Dùng ★</span>
+                                        </button>
+                                        <button type="button" class="dan-mode-tab-btn" id="tabDan25" onclick="setDanMode('dan25')">
+                                            <i class="fa-solid fa-layer-group text-cyan"></i> DÀN 25 SỐ (5 Chạm Lõi)
+                                        </button>
+                                        <button type="button" class="dan-mode-tab-btn" id="tabDanSeparate" onclick="setDanMode('separate')">
+                                            <i class="fa-solid fa-arrows-split-up-and-left text-purple"></i> TÁCH TIỀN & HẬU (2x25 Số)
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div class="phuc-hop-unified-card">
                                     <div class="unified-top-bar">
                                         <div class="cham-pills-display" id="predChamListMaster">
+                                            <div class="cham-tag-pill"><span class="cham-num">--</span> <span class="cham-prob">0%</span></div>
                                             <div class="cham-tag-pill"><span class="cham-num">--</span> <span class="cham-prob">0%</span></div>
                                             <div class="cham-tag-pill"><span class="cham-num">--</span> <span class="cham-prob">0%</span></div>
                                             <div class="cham-tag-pill"><span class="cham-num">--</span> <span class="cham-prob">0%</span></div>
@@ -342,31 +384,52 @@
                                         </div>
                                     </div>
 
-                                    <!-- 6 CẦU VÀNG BẮT CHẠM CAO THỦ BREAKDOWN -->
+                                    <!-- 6 CẦU VÀNG BẮT CHẠM CAO THỦ + KHÓA TRỤC TÂM (d3) BREAKDOWN -->
                                     <div class="golden-rules-breakdown" id="goldenRulesBreakdown">
                                         <span class="golden-rule-item" title="Cầu Tổng Đầu (Chục Ngàn + Ngàn d1+d2) chính nó & bóng dương"><i class="fa-solid fa-angles-left text-cyan"></i> Tổng Đầu (d1+d2): <b id="sumDauVal" class="text-cyan">--</b></span>
                                         <span class="golden-rule-item" title="Cầu Tổng Đuôi (Hàng Chục + Đơn Vị d4+d5) chính nó & bóng dương"><i class="fa-solid fa-angles-right text-purple"></i> Tổng Đuôi (d4+d5): <b id="sumDuoiVal" class="text-purple">--</b></span>
                                         <span class="golden-rule-item" title="Hàng trăm & Đơn vị theo Bảng quy đổi 0-9, 1-2, 3-6, 4-8, 5-7"><i class="fa-solid fa-star text-gold"></i> Cặp Quy Đổi: <b id="goldenPairVal" class="text-yellow">--</b></span>
                                         <span class="golden-rule-item" title="Đơn vị x2 lấy chính nó hoặc bóng dương"><i class="fa-solid fa-bolt text-gold"></i> Đơn Vị x2: <b id="unitDoubleVal" class="text-green">--</b></span>
+                                        <span class="golden-rule-item" title="Khóa Trục Tâm (d3) & Bóng Dương Tâm chống né số"><i class="fa-solid fa-lock text-gold"></i> Khóa Tâm (d3): <b id="lockCenterVal" class="text-gold">--</b></span>
                                         <span class="golden-rule-item" title="Đơn vị x2 trừ 1 & cộng 1"><i class="fa-solid fa-arrows-left-right text-gold"></i> Biên (±1): <b id="unitBoundsVal" class="text-white">--</b></span>
                                     </div>
 
-                                    <div class="phuc-hop-box">
+                                    <!-- KHỐI DÀN SỐ CHUNG (DÀN 36 HOẶC DÀN 25) -->
+                                    <div class="phuc-hop-box" id="singleDanBox">
                                         <div class="phuc-hop-header">
-                                            <span class="phuc-hop-title-badge">
-                                                <i class="fa-solid fa-layer-group text-gold"></i> 
-                                                <b>DÀN 25 SỐ GHÉP 5 CHẠM (Bao Kép Bằng & Kép Lệch - Đánh Tiền Nhị & Hậu Nhị):</b>
+                                            <span class="phuc-hop-title-badge" id="phucHopTitleBadge">
+                                                <i class="fa-solid fa-gem text-gold"></i> 
+                                                <b>DÀN 36 SỐ GHÉP 6 CHẠM VIP (Bất Bại - Bao Trọn Kép - Đánh Tiền & Hậu Nhị):</b>
                                             </span>
                                             <div class="phuc-hop-actions">
-                                                <button type="button" class="btn-copy-phuchop btn-copy-master-main" onclick="copyUnifiedPhucHop(25)" title="Sao chép 25 số VIP (có kép)">
-                                                    <i class="fa-solid fa-copy"></i> Copy 25 Số VIP (Có Kép)
-                                                </button>
-                                                <button type="button" class="btn-copy-phuchop btn-copy-secondary" onclick="copyUnifiedPhucHop(20)" title="Sao chép 20 số VIP (bỏ kép)">
-                                                    <i class="fa-solid fa-copy"></i> Copy 20 Số (Bỏ Kép)
+                                                <button type="button" class="btn-copy-phuchop btn-copy-master-main" id="btnCopyMainPhucHop" onclick="copyUnifiedPhucHop()" title="Sao chép dàn số VIP bao trọn kép">
+                                                    <i class="fa-solid fa-copy"></i> Copy Dàn Số VIP (Có Kép)
                                                 </button>
                                             </div>
                                         </div>
-                                        <div class="phuc-hop-list list-unified-vip" id="phucHopMasterListDisplay">Đang tính toán dàn 25 số...</div>
+                                        <div class="phuc-hop-list list-unified-vip" id="phucHopMasterListDisplay">Đang tính toán dàn số VIP...</div>
+                                    </div>
+
+                                    <!-- TÁCH RIÊNG 2 DÀN 25 SỐ TIỀN NHỊ & HẬU NHỊ (Khi chọn tab Tách Riêng) -->
+                                    <div class="separate-nhi-grid" id="separateNhiGrid" style="display: none;">
+                                        <div class="sub-nhi-card card-sub-tien">
+                                            <div class="sub-nhi-header">
+                                                <span class="sub-nhi-title text-cyan"><i class="fa-solid fa-angles-left"></i> <b>TIỀN NHỊ (2 Số Đầu d1 d2)</b></span>
+                                                <div class="sub-nhi-actions">
+                                                    <button type="button" class="btn-copy-phuchop btn-copy-mini" onclick="copyUnifiedPhucHop('tien25')"><i class="fa-solid fa-copy"></i> Copy 25 Số Tiền (Có Kép)</button>
+                                                </div>
+                                            </div>
+                                            <div class="phuc-hop-list list-sub-nhi" id="phucHopTienListDisplay">--</div>
+                                        </div>
+                                        <div class="sub-nhi-card card-sub-hau">
+                                            <div class="sub-nhi-header">
+                                                <span class="sub-nhi-title text-purple"><i class="fa-solid fa-angles-right"></i> <b>HẬU NHỊ (2 Số Đuôi d4 d5)</b></span>
+                                                <div class="sub-nhi-actions">
+                                                    <button type="button" class="btn-copy-phuchop btn-copy-mini" onclick="copyUnifiedPhucHop('hau25')"><i class="fa-solid fa-copy"></i> Copy 25 Số Hậu (Có Kép)</button>
+                                                </div>
+                                            </div>
+                                            <div class="phuc-hop-list list-sub-nhi" id="phucHopHauListDisplay">--</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -385,12 +448,12 @@
                     </div>
                 </div>
 
-                <!-- THẺ NUÔI DÀN 25 KHUNG 3 KỲ (ĂN LÀ ĐỔI DÀN) -->
+                <!-- THẺ NUÔI DÀN KHUNG 3 KỲ (ĂN LÀ ĐỔI DÀN) -->
                 <div class="card card-frame-active glow-border" id="cardActiveFrame">
                     <div class="card-header">
                         <div class="frame-live-badge">
                             <span class="pulse-dot" style="background:#fbbf24; box-shadow: 0 0 10px #fbbf24;"></span>
-                            <b id="activeFrameTitle"><i class="fa-solid fa-crosshairs text-gold"></i> NUÔI DÀN 25 KHUNG 3 KỲ (ĂN LÀ ĐỔI DÀN)</b>
+                            <b id="activeFrameTitle"><i class="fa-solid fa-gem text-gold"></i> NUÔI DÀN 36 SỐ BẤT BẠI (6 CHẠM VIP)</b>
                         </div>
                         <span class="frame-step-badge badge-step1" id="activeFrameStepBadge">TAY 1 / 3</span>
                     </div>
@@ -398,7 +461,7 @@
                     <div class="active-frame-body">
                         <div class="frame-meta-row">
                             <span><i class="fa-solid fa-flag-checkered text-cyan"></i> Mốc Gốc: <b id="activeFrameOrigin" class="text-white">Chưa có</b></span>
-                            <span><i class="fa-solid fa-coins text-gold"></i> Vào Vốn: <b id="activeFrameBetAdvice" class="text-green">TAY 1: Đánh 20K/số (Tổng: 1.000.000đ)</b></span>
+                            <span><i class="fa-solid fa-coins text-gold"></i> Vào Vốn: <b id="activeFrameBetAdvice" class="text-green">TAY 1: Đánh 10K/số (Tổng: 720.000đ)</b></span>
                         </div>
 
                         <!-- KHỐI ĐÁNH GIÁ ĐỘ MẠNH CẦU & KIẾN NGHỊ VÀO VỐN AI -->
@@ -417,8 +480,9 @@
                         </div>
 
                         <div class="frame-cham-row">
-                            <div class="frame-cham-label"><i class="fa-solid fa-shield text-gold"></i> <b>5 CHẠM CỨNG CỦA KHUNG:</b></div>
+                            <div class="frame-cham-label"><i class="fa-solid fa-shield text-gold"></i> <b>CHẠM VIP CỦA KHUNG:</b></div>
                             <div class="cham-pills-display" id="activeFrameChamPills">
+                                <div class="cham-tag-pill"><span class="cham-num">--</span></div>
                                 <div class="cham-tag-pill"><span class="cham-num">--</span></div>
                                 <div class="cham-tag-pill"><span class="cham-num">--</span></div>
                                 <div class="cham-tag-pill"><span class="cham-num">--</span></div>
@@ -429,16 +493,13 @@
 
                         <div class="phuc-hop-box frame-dan25-box">
                             <div class="phuc-hop-header">
-                                <span class="phuc-hop-title-badge">
-                                    <i class="fa-solid fa-layer-group text-gold"></i> 
-                                    <b>DÀN 25 SỐ NUÔI KHUNG (Đánh Tiền Nhị & Hậu Nhị - Trúng là Dừng Đổi Dàn):</b>
+                                <span class="phuc-hop-title-badge" id="activeFrameDanTitleBadge">
+                                    <i class="fa-solid fa-gem text-gold"></i> 
+                                    <b>DÀN 36 SỐ NUÔI KHUNG (6 Chạm VIP - Đánh Tiền & Hậu Nhị - Trúng là Dừng Đổi Dàn):</b>
                                 </span>
                                 <div class="phuc-hop-actions">
-                                    <button type="button" class="btn-copy-phuchop btn-copy-master-main" onclick="copyActiveFrameDan(25)" title="Sao chép 25 số nuôi khung (có kép)">
-                                        <i class="fa-solid fa-copy"></i> Copy 25 Số Nuôi (Có Kép)
-                                    </button>
-                                    <button type="button" class="btn-copy-phuchop btn-copy-secondary" onclick="copyActiveFrameDan(20)" title="Sao chép 20 số nuôi khung (bỏ kép)">
-                                        <i class="fa-solid fa-copy"></i> Copy 20 Số (Bỏ Kép)
+                                    <button type="button" class="btn-copy-phuchop btn-copy-master-main" id="btnCopyActiveMain" onclick="copyActiveFrameDan()" title="Sao chép dàn số nuôi khung (bao trọn kép)">
+                                        <i class="fa-solid fa-copy"></i> Copy Dàn Nuôi Khung (Có Kép)
                                     </button>
                                 </div>
                             </div>
@@ -663,8 +724,55 @@
             </div>
         </div>
 
-        <!-- VISUAL ROADMAP SECTION (TÀI XỈU & CHẴN LẺ HIỂN THỊ ĐỒNG THỜI - ĐẶT TRƯỚC BẢNG LỊCH SỬ) -->
-        <div class="grid-bottom-section">
+        <!-- RESULTS SECTION: 10-ROUND HISTORY TABLE (PROMINENTLY DISPLAYED ON TOP) -->
+        <div class="card card-history glow-border" id="recentResultsSection">
+            <div class="card-header">
+                <h3>
+                    <i class="fa-solid fa-list-check"></i> 
+                    <span id="tableTitleDisplay">KẾT QUẢ 10 KỲ QUAY GẦN NHẤT</span>
+                </h3>
+                
+                <div class="table-controls-bar">
+                    <button class="btn btn-sm btn-outline" onclick="undoLastRound()" title="Xóa kỳ vừa nhập">
+                        <i class="fa-solid fa-rotate-left"></i> Xóa kỳ vừa nhập
+                    </button>
+                    <button class="btn btn-sm btn-danger-outline" onclick="clearAllData()" title="Xóa toàn bộ lịch sử tất cả các kỳ">
+                        <i class="fa-solid fa-trash-can"></i> Xóa tất cả các kỳ
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="history-table" id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Kỳ Quay</th>
+                            <th>5 Con Số Ra</th>
+                            <th>Tổng & Chi Tiết</th>
+                            <th>Kết Quả Thực</th>
+                            <th>Dự Đoán TX / CL</th>
+                            <th>AI Bắt Chạm VIP</th>
+                            <th>Đối Soát TX</th>
+                            <th>Đối Soát CL</th>
+                            <th>Đối Soát Dàn Nuôi</th>
+                            <th>Tiền Nhị / Hậu Nhị</th>
+                            <th>Nhịp Cầu Nhận Diện</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr>
+                            <td colspan="12" class="empty-table-msg">
+                                <i class="fa-solid fa-inbox"></i> Chưa có dữ liệu kỳ quay nào. Hãy nhập kỳ đầu tiên ở trên hoặc bấm "Mẫu 25 kỳ" để thử nghiệm!
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VISUAL ROADMAP SECTION (TÀI XỈU & CHẴN LẺ HIỂN THỊ ĐỒNG THỜI) -->
+        <div class="grid-bottom-section" style="margin-top: 20px;">
             <div class="card card-roadmap">
                 <div class="card-header">
                     <h3><i class="fa-solid fa-diagram-project"></i> BẢNG SOI NHỊP CẦU TRỰC QUAN (ROADMAP)</h3>
@@ -714,53 +822,6 @@
             </div>
         </div>
 
-        <!-- RESULTS SECTION: 10-ROUND HISTORY TABLE (PROMINENTLY DISPLAYED) -->
-        <div class="card card-history glow-border" id="recentResultsSection">
-            <div class="card-header">
-                <h3>
-                    <i class="fa-solid fa-list-check"></i> 
-                    <span id="tableTitleDisplay">KẾT QUẢ 10 KỲ QUAY GẦN NHẤT</span>
-                </h3>
-                
-                <div class="table-controls-bar">
-                    <button class="btn btn-sm btn-outline" onclick="undoLastRound()" title="Xóa kỳ vừa nhập">
-                        <i class="fa-solid fa-rotate-left"></i> Xóa kỳ vừa nhập
-                    </button>
-                    <button class="btn btn-sm btn-danger-outline" onclick="clearAllData()" title="Xóa toàn bộ lịch sử tất cả các kỳ">
-                        <i class="fa-solid fa-trash-can"></i> Xóa tất cả các kỳ
-                    </button>
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table class="history-table" id="historyTable">
-                    <thead>
-                        <tr>
-                            <th>Kỳ Quay</th>
-                            <th>5 Con Số Ra</th>
-                            <th>Tổng & Chi Tiết</th>
-                            <th>Kết QuẢ Thực</th>
-                            <th>Dự Đoán TX / CL</th>
-                            <th>AI Bắt 5 Chạm</th>
-                            <th>Đối Soát TX</th>
-                            <th>Đối Soát CL</th>
-                            <th>Đối Soát 5 Chạm</th>
-                            <th>Tiền Nhị / Hậu Nhị (25 Số)</th>
-                            <th>Nhịp Cầu Nhận Diện</th>
-                            <th>Thao Tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody">
-                        <tr>
-                            <td colspan="12" class="empty-table-msg">
-                                <i class="fa-solid fa-inbox"></i> Chưa có dữ liệu kỳ quay nào. Hãy nhập kỳ đầu tiên ở trên hoặc bấm "Mẫu 25 kỳ" để thử nghiệm!
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
         <!-- FOOTER -->
         <footer class="app-footer">
             <p>Phần mềm Module Dự Đoán Tài Xỉu - Chẵn Lẻ 5 Số AI © 2026 | Tự động phân tích cầu bệt, cầu 1-1, 1-2, 2-2, Markov Chain & Nhận diện nhịp gãy/húp</p>
@@ -768,6 +829,6 @@
     </div>
 
     <!-- SOUND EFFECTS (OPTIONAL / WEB AUDIO API) -->
-    <script src="app.js?v=4.8"></script>
+    <script src="app.js?v=5.0"></script>
 </body>
 </html>

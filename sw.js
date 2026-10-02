@@ -1,10 +1,10 @@
 // Service Worker for PWA Offline Support & Full Installability
-const CACHE_NAME = 'soicau-5d-v4.8';
+const CACHE_NAME = 'soicau-5d-v5.0';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './style.css?v=4.8',
-    './app.js?v=4.8',
+    './style.css?v=5.0',
+    './app.js?v=5.0',
     './manifest.json',
     './icon.svg'
 ];

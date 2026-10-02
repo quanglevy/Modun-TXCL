@@ -462,6 +462,86 @@ body {
     border: 1px dashed rgba(255, 255, 255, 0.15);
 }
 
+/* PREDICTION ACTION ADVICE (KIẾN NGHỊ ĐÁNH HAY NGẮM TÀI XỈU & CHẴN LẺ) */
+.pred-action-advice {
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+    transition: all 0.3s ease;
+}
+
+.action-badge-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.action-traffic-badge {
+    font-family: var(--font-heading);
+    font-size: 0.76rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 14px;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-transform: uppercase;
+}
+
+.action-traffic-badge.signal-green {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1.5px solid #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+}
+
+.action-traffic-badge.signal-yellow {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1.5px solid #f59e0b;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+}
+
+.action-traffic-badge.signal-red {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+    border: 1.5px solid #ef4444;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.45);
+    animation: pulse-border-red 2s infinite ease-in-out;
+}
+
+.action-traffic-badge.signal-warmup {
+    background: rgba(6, 182, 212, 0.2);
+    color: #38bdf8;
+    border: 1px solid rgba(6, 182, 212, 0.5);
+}
+
+.action-sub-pattern {
+    font-size: 0.72rem;
+    color: var(--cyan-glow);
+    background: rgba(0, 242, 254, 0.1);
+    border: 1px solid rgba(0, 242, 254, 0.25);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.action-advice-desc {
+    font-size: 0.78rem;
+    color: #e2e8f0;
+    line-height: 1.35;
+}
+
 /* TOP 3 CHẠM DISPLAY */
 .cham-pills-display {
     display: flex;
@@ -526,6 +606,12 @@ body {
     box-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
 }
 
+.rank-top6 {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #022c22;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
 .cham-num {
     font-family: var(--font-heading);
     font-size: 1.25rem;
@@ -553,6 +639,148 @@ body {
     text-align: center;
     line-height: 1.15;
     letter-spacing: 0.2px;
+}
+
+/* ==========================================================================
+   DÀN MODE SELECTOR TABS & SEPARATE NHỊ CONTAINERS
+   ========================================================================== */
+.dan-mode-tabs-wrap {
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+.dan-mode-tabs {
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 5px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+}
+
+.dan-mode-tab-btn {
+    flex: 1;
+    min-width: 150px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text-muted);
+    font-family: var(--font-heading);
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+}
+
+.dan-mode-tab-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.dan-mode-tab-btn.active {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.35));
+    border-color: #f59e0b;
+    color: #fbbf24;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.tab-recommend-badge {
+    background: linear-gradient(135deg, #ef4444, #f59e0b);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+/* TÁCH RIÊNG TIỀN NHỊ & HẬU NHỊ GRID */
+.separate-nhi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.sub-nhi-card {
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.card-sub-tien {
+    border-color: rgba(6, 182, 212, 0.4);
+    box-shadow: inset 0 0 10px rgba(6, 182, 212, 0.05);
+}
+
+.card-sub-hau {
+    border-color: rgba(139, 92, 246, 0.4);
+    box-shadow: inset 0 0 10px rgba(139, 92, 246, 0.05);
+}
+
+.sub-nhi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.sub-nhi-title {
+    font-family: var(--font-heading);
+    font-size: 0.88rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sub-nhi-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-copy-mini {
+    padding: 3px 8px !important;
+    font-size: 0.72rem !important;
+    border-radius: 4px !important;
+}
+
+.list-sub-nhi {
+    font-family: var(--font-heading);
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    line-height: 1.5;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 6px;
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.card-sub-tien .list-sub-nhi {
+    color: #38bdf8;
+    border-color: rgba(6, 182, 212, 0.3);
+}
+
+.card-sub-hau .list-sub-nhi {
+    color: #c084fc;
+    border-color: rgba(139, 92, 246, 0.3);
 }
 
 /* ==========================================================================

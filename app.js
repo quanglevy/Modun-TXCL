@@ -13,6 +13,7 @@ const STATE = {
     rounds: [], // Array of completed rounds
     currentPrediction: null, // Next round prediction
     calcMode: 'sum5', // 'sum5', 'last2', 'last3', 'unitDigit'
+    danMode: 'dan36', // 'dan36' (6 Chạm VIP - 36 số), 'dan25' (5 Chạm Lõi - 25 số), 'separate' (Tách Riêng Tiền/Hậu)
     roadmapTab: 'tx', // 'tx' or 'cl'
     tableFilter: '10', // '10' or 'all'
     phucHopTab: 'tien', // 'tien', 'hau', 'master'
@@ -108,76 +109,20 @@ function changeCalculationMode() {
     updateAllViews();
 }
 
+function setDanMode(mode) {
+    if (!['dan36', 'dan25', 'separate'].includes(mode)) return;
+    STATE.danMode = mode;
+    saveToLocalStorage();
+    recalculateAllRounds();
+    updateAllViews();
+}
+
 function recalculateAllRounds() {
     const originalRounds = [...STATE.rounds];
     STATE.rounds = [];
-
-    for (let i = 0; i < originalRounds.length; i++) {
-        const item = originalRounds[i];
-        // 1. Predict based on existing history at step i
-        const pred = generateAIPrediction(STATE.rounds);
-        
-        // 2. Evaluate actual result
-        const evalRes = evaluateDigits(item.digits, STATE.calcMode);
-        
-        // 3. Determine TX / CL status
-        const isTxHup = pred.predTx ? (pred.predTx === evalRes.tx) : true;
-        const isClHup = pred.predCl ? (pred.predCl === evalRes.cl) : true;
-        const statusTx = isTxHup ? 'Húp' : 'Gãy';
-        const statusCl = isClHup ? 'Húp' : 'Gãy';
-        const statusOverall = (isTxHup && isClHup) ? 'Húp' : (isTxHup ? 'Húp (TX)' : (isClHup ? 'Húp (CL)' : 'Gãy'));
-
-        // 4. Determine Master 5 Cham & Dàn 25 Số status
-        const predChamArr = pred.masterDigits || pred.predCham || [9, 4, 2, 7, 0];
-        const hitCham = predChamArr.filter(c => item.digits.includes(c));
-        const isChamHit = hitCham.length > 0;
-        const statusCham = isChamHit ? 'Trúng' : 'Trượt';
-        const statusChamDetail = isChamHit ? `Trúng [${hitCham.join(', ')}]` : 'Trượt';
-
-        // Đánh chung Dàn 25 số cho Tiền Nhị (d1 d2) & Hậu Nhị (d4 d5)
-        const tienNhiVal = `${item.digits[0]}${item.digits[1]}`;
-        const hauNhiVal = `${item.digits[3]}${item.digits[4]}`;
-        const isTienNhiHit = predChamArr.includes(item.digits[0]) && predChamArr.includes(item.digits[1]);
-        const isHauNhiHit = predChamArr.includes(item.digits[3]) && predChamArr.includes(item.digits[4]);
-        const isUnified25Hit = isTienNhiHit || isHauNhiHit;
-
-        STATE.rounds.push({
-            period: item.period,
-            digits: item.digits,
-            sum: evalRes.sum,
-            detailText: evalRes.detailText,
-            actualTx: evalRes.tx,
-            actualCl: evalRes.cl,
-            predTx: pred.predTx || '--',
-            predCl: pred.predCl || '--',
-            predTxConf: pred.predTxConf || 50,
-            predClConf: pred.predClConf || 50,
-            predCham: predChamArr,
-            predChamList: pred.predChamList || pred.topMaster || [],
-            tienDigits: predChamArr,
-            topTien: pred.topMaster || [],
-            hauDigits: predChamArr,
-            topHau: pred.topMaster || [],
-            phucHop25: pred.phucHopMaster25 || pred.phucHop25 || [],
-            predChamConf: pred.predChamConf || 96,
-            hitCham: hitCham,
-            isChamHit: isChamHit,
-            tienNhiVal: tienNhiVal,
-            isTienNhiHit: isTienNhiHit,
-            hauNhiVal: hauNhiVal,
-            isHauNhiHit: isHauNhiHit,
-            isUnified25Hit: isUnified25Hit,
-            statusCham: statusCham,
-            statusChamDetail: statusChamDetail,
-            statusTx: statusTx,
-            statusCl: statusCl,
-            statusOverall: statusOverall,
-            isHup: isTxHup || isClHup,
-            isDoubleHup: isTxHup && isClHup,
-            bridgePattern: pred.patternName || 'Nhịp khởi tạo',
-            bridgeReason: pred.reason || 'Dữ liệu phân tích ban đầu'
-        });
-    }
+    originalRounds.forEach(r => {
+        addNewRound(r.period, r.digits);
+    });
 }
 
 /* ==========================================================================
@@ -392,6 +337,39 @@ function calculatePascalPeak(digits) {
 }
 
 /**
+ * Calculate Pascal Peak for 3 Head Digits [d1, d2, d3] (Cầu Tiền Nhị)
+ */
+function calculatePascalHead(digits) {
+    if (!digits || digits.length < 3) return { peak: 0, tier1: [0, 0] };
+    const [d1, d2, d3] = digits.slice(0, 3).map(Number);
+    const p1 = (d1 + d2) % 10;
+    const p2 = (d2 + d3) % 10;
+    const peak = (p1 + p2) % 10;
+    return { peak, tier1: [p1, p2] };
+}
+
+/**
+ * Calculate Pascal Peak for 3 Tail Digits [d3, d4, d5] (Cầu Hậu Nhị)
+ */
+function calculatePascalTail(digits) {
+    if (!digits || digits.length < 5) {
+        if (digits && digits.length >= 3) {
+            const [d3, d4, d5] = digits.slice(-3).map(Number);
+            const q1 = (d3 + d4) % 10;
+            const q2 = (d4 + d5) % 10;
+            const peak = (q1 + q2) % 10;
+            return { peak, tier1: [q1, q2] };
+        }
+        return { peak: 0, tier1: [0, 0] };
+    }
+    const [d3, d4, d5] = [digits[2], digits[3], digits[4]].map(Number);
+    const q1 = (d3 + d4) % 10;
+    const q2 = (d4 + d5) % 10;
+    const peak = (q1 + q2) % 10;
+    return { peak, tier1: [q1, q2] };
+}
+
+/**
  * Get Yin-Yang and Shadow Digits
  */
 function getYinYangShadows(digit) {
@@ -399,6 +377,36 @@ function getYinYangShadows(digit) {
     const amMap = { 0: 7, 7: 0, 1: 4, 4: 1, 2: 9, 9: 2, 3: 6, 6: 3, 5: 8, 8: 5 };
     const am = amMap[digit] !== undefined ? amMap[digit] : duong;
     return { duong, am };
+}
+
+/**
+ * Helper to generate 36 2-digit pairs from 6 Cham digits (Phức Hợp Có Kép)
+ */
+function generatePhucHop36(chamDigits) {
+    if (!chamDigits || chamDigits.length < 6) return [];
+    const pairs = [];
+    for (let i = 0; i < 6; i++) {
+        for (let j = 0; j < 6; j++) {
+            pairs.push(`${chamDigits[i]}${chamDigits[j]}`);
+        }
+    }
+    return pairs;
+}
+
+/**
+ * Helper to generate 30 2-digit pairs from 6 Cham digits (Phức Hợp Bỏ Kép)
+ */
+function generatePhucHop30(chamDigits) {
+    if (!chamDigits || chamDigits.length < 6) return [];
+    const pairs = [];
+    for (let i = 0; i < 6; i++) {
+        for (let j = 0; j < 6; j++) {
+            if (i !== j) {
+                pairs.push(`${chamDigits[i]}${chamDigits[j]}`);
+            }
+        }
+    }
+    return pairs;
 }
 
 /**
@@ -431,51 +439,71 @@ function generatePhucHop20(chamDigits) {
     return pairs;
 }
 
-function copyUnifiedPhucHop(count = 25) {
+function copyUnifiedPhucHop(target = 'auto') {
     const nextPred = STATE.currentPrediction || generateAIPrediction(STATE.rounds);
-    const digits = nextPred.masterDigits || nextPred.predCham || [8, 5, 7, 0, 9];
+    const m6 = nextPred.masterDigits6 || nextPred.masterDigits || [7, 0, 3, 1, 6, 9];
+    const m5 = nextPred.masterDigits5 || m6.slice(0, 5);
     
     let text = '';
     let typeLabel = '';
-    if (count === 20) {
-        const pairs20 = generatePhucHop20(digits);
-        text = pairs20.join(', ');
-        typeLabel = '20 số VIP bỏ kép (Đánh Tiền Nhị & Hậu Nhị)';
+
+    if (target === 'tien25') {
+        const pairs = nextPred.phucHopTien25 || generatePhucHop25(nextPred.tienDigits || m5);
+        text = pairs.join(', ');
+        typeLabel = '25 số Tiền Nhị Chuyên Biệt (Đầu d1 d2 - Có Kép)';
+    } else if (target === 'hau25') {
+        const pairs = nextPred.phucHopHau25 || generatePhucHop25(nextPred.hauDigits || m5);
+        text = pairs.join(', ');
+        typeLabel = '25 số Hậu Nhị Chuyên Biệt (Đuôi d4 d5 - Có Kép)';
+    } else if (target === 36 || (target === 'auto' && STATE.danMode === 'dan36')) {
+        const pairs36 = nextPred.phucHopMaster36 || generatePhucHop36(m6);
+        text = pairs36.join(', ');
+        typeLabel = '36 số Bất Bại (6 Chạm VIP bao trọn kép)';
     } else {
-        const pairs25 = generatePhucHop25(digits);
+        const pairs25 = nextPred.phucHopMaster25 || generatePhucHop25(m5);
         text = pairs25.join(', ');
-        typeLabel = '25 số VIP bao trọn kép (Đánh Tiền Nhị & Hậu Nhị)';
+        typeLabel = '25 số VIP (5 Chạm Lõi bao trọn kép)';
     }
 
-    navigator.clipboard.writeText(text).then(() => {
-        alert(`ĐÃ SAO CHÉP DÀN ${typeLabel.toUpperCase()}!\n\nDàn số (${count} số): ` + text);
-    }).catch(() => {
+    const alertMsg = `ĐÃ SAO CHÉP DÀN ${typeLabel.toUpperCase()}!\n\nDàn số (${text.split(', ').length} số): ` + text;
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert(alertMsg);
+        }).catch(() => {
+            fallbackCopy(text, alertMsg);
+        });
+    } else {
+        fallbackCopy(text, alertMsg);
+    }
+}
+
+function fallbackCopy(text, alertMsg) {
+    try {
         const temp = document.createElement('textarea');
         temp.value = text;
+        temp.style.position = 'fixed';
+        temp.style.opacity = '0';
         document.body.appendChild(temp);
         temp.select();
         document.execCommand('copy');
         document.body.removeChild(temp);
-        alert(`ĐÃ SAO CHÉP DÀN ${typeLabel.toUpperCase()}!\n\nDàn số (${count} số): ` + text);
-    });
+    } catch (e) {}
+    if (typeof alert !== 'undefined' && alertMsg) {
+        alert(alertMsg);
+    }
 }
 
-function copyPhucHopDirect(type = 'master', count = 25) {
+function copyPhucHopDirect(type = 'master', count = 36) {
     copyUnifiedPhucHop(count);
 }
 
-function copyCurrentPhucHop(count = 25) {
+function copyCurrentPhucHop(count = 36) {
     copyUnifiedPhucHop(count);
 }
 
 /**
- * MAX SIÊU CAO THỦ - Bắt 5 Chạm Cứng VIP & Dàn 25 Số Bất Bại
- * 1. Pascal Pyramid Dual-Peak Centroids
- * 2. Positional Drop Digits (Head d1, d2, Tail d4, d5, Center d3)
- * 3. Modulo-10 Sum Vectors (Head Sum, Tail Sum, Total Sum)
- * 4. Selective Yin-Yang Shadows of Dominant Digits
- * 5. Adjacent Boundary Flow (d1 ± 1, d5 ± 1)
- * 6. Extreme Cold/Gan Suppression Filter
+ * MAX SIÊU CAO THỦ - Bắt 6 Chạm VIP & 5 Chạm Lõi Bất Bại
+ * Tích hợp Bảng Quy Đổi, Pascal Pyramid, Điểm Rơi & Khóa Trục Tâm chống né số
  */
 const MAP_EXCHANGE = {
     0: 9, 9: 0,
@@ -495,84 +523,124 @@ function getBridgeAttribution(digit, lastRoundDigits) {
     const [d1, d2, d3, d4, d5] = lastRoundDigits.map(Number);
     const u = (d5 * 2) % 10;
     const u_bong = (u + 5) % 10;
+    const u_d4 = (d4 * 2) % 10;
+    const u_d4_bong = (u_d4 + 5) % 10;
+    const u_d1 = (d1 * 2) % 10;
+    const u_d1_bong = (u_d1 + 5) % 10;
+    const u_d2 = (d2 * 2) % 10;
+    const u_d2_bong = (u_d2 + 5) % 10;
+
     const r2_tram = MAP_EXCHANGE[d3] !== undefined ? MAP_EXCHANGE[d3] : (d3 + 5) % 10;
     const r2_donvi = MAP_EXCHANGE[d5] !== undefined ? MAP_EXCHANGE[d5] : (d5 + 5) % 10;
+    const r2_d1 = MAP_EXCHANGE[d1] !== undefined ? MAP_EXCHANGE[d1] : (d1 + 5) % 10;
+    const r2_d4 = MAP_EXCHANGE[d4] !== undefined ? MAP_EXCHANGE[d4] : (d4 + 5) % 10;
+
     const r3 = (u - 1 + 10) % 10;
     const r4 = (u + 1) % 10;
 
     const sumDau = (d1 + d2) % 10;
     const sumDauBong = (sumDau + 5) % 10;
+    const diffDau = Math.abs(d1 - d2);
+    const diffDauBong = (diffDau + 5) % 10;
+
     const sumDuoi = (d4 + d5) % 10;
     const sumDuoiBong = (sumDuoi + 5) % 10;
+    const diffDuoi = Math.abs(d4 - d5);
+    const diffDuoiBong = (diffDuoi + 5) % 10;
 
+    const tramBong = (d3 + 5) % 10;
     const pasc = calculatePascalPeak(lastRoundDigits);
+    const pascHead = calculatePascalHead(lastRoundDigits);
+    const pascTail = calculatePascalTail(lastRoundDigits);
 
     if (digit === sumDau) return { tag: 'Tổng Đầu (Chính)', detail: `Cầu Tổng Đầu: ${d1} + ${d2} = ${sumDau}` };
     if (digit === sumDauBong) return { tag: 'Bóng Tổng Đầu', detail: `Cầu Tổng Đầu: Bóng dương của (${d1} + ${d2}) = ${sumDauBong}` };
+    if (digit === diffDau) return { tag: 'Hiệu Đầu (Chính)', detail: `Cầu Hiệu Đầu: |${d1} - ${d2}| = ${diffDau}` };
+    if (digit === diffDauBong) return { tag: 'Bóng Hiệu Đầu', detail: `Cầu Hiệu Đầu: Bóng dương của |${d1} - ${d2}| = ${diffDauBong}` };
+
     if (digit === sumDuoi) return { tag: 'Tổng Đuôi (Chính)', detail: `Cầu Tổng Đuôi: ${d4} + ${d5} = ${sumDuoi}` };
     if (digit === sumDuoiBong) return { tag: 'Bóng Tổng Đuôi', detail: `Cầu Tổng Đuôi: Bóng dương của (${d4} + ${d5}) = ${sumDuoiBong}` };
+    if (digit === diffDuoi) return { tag: 'Hiệu Đuôi (Chính)', detail: `Cầu Hiệu Đuôi: |${d4} - ${d5}| = ${diffDuoi}` };
+    if (digit === diffDuoiBong) return { tag: 'Bóng Hiệu Đuôi', detail: `Cầu Hiệu Đuôi: Bóng dương của |${d4} - ${d5}| = ${diffDuoiBong}` };
+
+    if (digit === d1 || digit === d2) return { tag: 'Rơi Tiền Nhị', detail: `Điểm rơi trực tiếp 2 số đầu Tiền Nhị (${digit})` };
+    if (digit === d4 || digit === d5) return { tag: 'Rơi Hậu Nhị', detail: `Điểm rơi trực tiếp 2 số đuôi Hậu Nhị (${digit})` };
+
+    if (digit === pascHead.peak) return { tag: 'Pascal Tiền Nhị', detail: `Đỉnh Pascal 3 số đầu [${d1},${d2},${d3}] = ${digit}` };
+    if (digit === pascTail.peak) return { tag: 'Pascal Hậu Nhị', detail: `Đỉnh Pascal 3 số đuôi [${d3},${d4},${d5}] = ${digit}` };
+
     if (digit === r2_tram) return { tag: 'Quy Đổi Trăm', detail: `Cầu Quy Đổi: Số hàng Trăm (${d3} ➔ ${digit})` };
+    if (digit === tramBong) return { tag: 'Bóng Khóa Tâm', detail: `Cầu Khóa Tâm: Bóng dương hàng Trăm (${d3} ➔ ${digit})` };
     if (digit === r2_donvi) return { tag: 'Quy Đổi Đ.Vị', detail: `Cầu Quy Đổi: Số hàng Đơn Vị (${d5} ➔ ${digit})` };
+    if (digit === r2_d1) return { tag: 'Quy Đổi Đầu', detail: `Cầu Quy Đổi: Số hàng Chục Ngàn (${d1} ➔ ${digit})` };
+    if (digit === r2_d4) return { tag: 'Quy Đổi Chục', detail: `Cầu Quy Đổi: Số hàng Chục (${d4} ➔ ${digit})` };
+
     if (digit === u) return { tag: 'Đơn Vị x2', detail: `Cầu Đơn Vị x2: ${d5} x 2 = ${digit}` };
     if (digit === u_bong) return { tag: 'Bóng Đ.Vị x2', detail: `Cầu Đơn Vị x2: Bóng dương của (${d5} x 2) = ${digit}` };
+    if (digit === u_d4) return { tag: 'Hàng Chục x2', detail: `Cầu Hàng Chục x2: ${d4} x 2 = ${digit}` };
+    if (digit === u_d4_bong) return { tag: 'Bóng Chục x2', detail: `Cầu Hàng Chục x2: Bóng dương của (${d4} x 2) = ${digit}` };
+
     if (digit === r3) return { tag: 'Biên Trừ (-1)', detail: `Cầu Biên: (${d5} x 2) - 1 = ${digit}` };
     if (digit === r4) return { tag: 'Biên Cộng (+1)', detail: `Cầu Biên: (${d5} x 2) + 1 = ${digit}` };
-    if (pasc.includes(digit)) return { tag: 'Đỉnh Pascal', detail: `Hội tụ 2 đỉnh tam giác Pascal (${pasc.join(', ')})` };
-    if ([d1, d2, d4, d5].includes(digit)) return { tag: 'Điểm Rơi', detail: `Điểm rơi trực tiếp kỳ trước (${digit})` };
+    if (pasc.includes(digit)) return { tag: 'Đỉnh Pascal 5 Số', detail: `Hội tụ 2 đỉnh tam giác Pascal (${pasc.join(', ')})` };
 
-    return { tag: 'Tổng Modulo', detail: `Cầu Tổng Vị Trí Modulo 10 (${digit})` };
+    return { tag: 'Khóa Trục Tâm', detail: `Cầu Khóa Trục Tâm chống né số (${digit})` };
 }
 
 /**
- * MAX SIÊU CAO THỦ - Bắt 5 Chạm Cứng VIP & Dàn 25 Số Bất Bại
- * Tích hợp 6 Cầu Vàng Bắt Chạm Gia Truyền của Cao Thủ:
- * 1. Cầu Đơn Vị * 2 -> Chính nó & Bóng dương (Tự động quét nhịp ăn chính nó / bóng dương)
- * 2. Cặp Chạm Vàng Quy Đổi Trăm (d3) & Đơn Vị (d5)
- * 3. Cầu Đơn Vị * 2 Trừ 1
- * 4. Cầu Đơn Vị * 2 Cộng 1
- * 5. Cầu Tổng Đầu (Chục Ngàn + Ngàn d1+d2) -> Chính nó & Bóng dương
- * 6. Cầu Tổng Đuôi (Hàng Chục + Đơn Vị d4+d5) -> Chính nó & Bóng dương
- * Kết hợp Đỉnh Tam Giác Pascal & Khử Lô Gan Cực Đoan.
+ * MAX SIÊU CAO THỦ - Bắt 6 Chạm VIP & 5 Chạm Lõi Bất Bại
+ * Tích hợp Cầu Chuyên Biệt Tiền Nhị (2 Đầu d1 d2), Cầu Chuyên Biệt Hậu Nhị (2 Đuôi d4 d5)
+ * Cầu Tổng & Hiệu, Đỉnh Pascal Đầu/Đuôi, Khóa Trục Tâm (d3) & Khử Lô Gan
  */
 function analyzeTop5Cham(history) {
     if (!history || history.length === 0) {
-        const defaultTop = [
+        const defaultTop6 = [
             { digit: 8, score: 580, prob: 96, bridgeTag: 'Quy Đổi Trăm', bridgeDetail: 'Cầu Quy Đổi: Số hàng Trăm' },
             { digit: 5, score: 510, prob: 91, bridgeTag: 'Đơn Vị x2', bridgeDetail: 'Cầu Đơn Vị x2' },
             { digit: 7, score: 440, prob: 86, bridgeTag: 'Tổng Đầu (Chính)', bridgeDetail: 'Cầu Tổng Đầu: 2 + 5 = 7' },
             { digit: 0, score: 360, prob: 79, bridgeTag: 'Bóng Tổng Đuôi', bridgeDetail: 'Cầu Tổng Đuôi: Bóng dương của 5 = 0' },
-            { digit: 9, score: 280, prob: 70, bridgeTag: 'Đỉnh Pascal', bridgeDetail: 'Đỉnh tam giác Pascal' }
+            { digit: 9, score: 280, prob: 72, bridgeTag: 'Đỉnh Pascal', bridgeDetail: 'Đỉnh tam giác Pascal' },
+            { digit: 3, score: 240, prob: 68, bridgeTag: 'Khóa Trục Tâm', bridgeDetail: 'Cầu Khóa Trục Tâm chống né' }
         ];
-        const masterDigits = defaultTop.map(x => x.digit);
+        const masterDigits6 = defaultTop6.map(x => x.digit);
+        const masterDigits5 = masterDigits6.slice(0, 5);
         return {
-            topTien: defaultTop,
-            topHau: defaultTop,
-            topMaster: defaultTop,
-            tienDigits: masterDigits,
-            hauDigits: masterDigits,
-            masterDigits: masterDigits,
+            top6: defaultTop6,
+            top5: defaultTop6.slice(0, 5),
+            topTien: defaultTop6.slice(0, 5),
+            topHau: defaultTop6.slice(0, 5),
+            topMaster: defaultTop6,
+            masterDigits6: masterDigits6,
+            masterDigits5: masterDigits5,
+            masterDigits: masterDigits6,
+            tienDigits: masterDigits5,
+            hauDigits: masterDigits5,
+            chamDigits: masterDigits6,
             goldenPair: [7, 2],
             unitDouble: [2, 7],
             unitMinus: 1,
             unitPlus: 3,
             sumDauPair: [7, 2],
             sumDuoiPair: [5, 0],
+            lockCenterPair: [0, 5],
             goldenFlowState: 'Chính nó & Bóng dương',
-            top5: defaultTop,
-            chamDigits: masterDigits,
-            phucHopTien25: generatePhucHop25(masterDigits),
-            phucHopTien20: generatePhucHop20(masterDigits),
-            phucHopHau25: generatePhucHop25(masterDigits),
-            phucHopHau20: generatePhucHop20(masterDigits),
-            phucHopMaster25: generatePhucHop25(masterDigits),
-            phucHopMaster20: generatePhucHop20(masterDigits),
-            phucHop25: generatePhucHop25(masterDigits),
-            phucHop20: generatePhucHop20(masterDigits),
+            phucHop36: generatePhucHop36(masterDigits6),
+            phucHop30: generatePhucHop30(masterDigits6),
+            phucHop25: generatePhucHop25(masterDigits5),
+            phucHop20: generatePhucHop20(masterDigits5),
+            phucHopMaster36: generatePhucHop36(masterDigits6),
+            phucHopMaster30: generatePhucHop30(masterDigits6),
+            phucHopMaster25: generatePhucHop25(masterDigits5),
+            phucHopMaster20: generatePhucHop20(masterDigits5),
+            phucHopTien25: generatePhucHop25(masterDigits5),
+            phucHopTien20: generatePhucHop20(masterDigits5),
+            phucHopHau25: generatePhucHop25(masterDigits5),
+            phucHopHau20: generatePhucHop20(masterDigits5),
             overallProb: 99,
             probTien: 95,
             probHau: 95,
             probMaster: 98,
-            reason: 'Khởi tạo dàn 5 chạm hạt nhân chuẩn theo 6 Cầu Vàng cao thủ và ma trận Pascal.'
+            reason: 'Khởi tạo dàn 6 chạm hạt nhân VIP chuẩn theo Cầu Vị Trí Tiền/Hậu, Khóa Trục Tâm và ma trận Pascal.'
         };
     }
 
@@ -580,22 +648,99 @@ function analyzeTop5Cham(history) {
     const lastRound = history[n - 1];
     const [d1, d2, d3, d4, d5] = lastRound.digits.map(Number);
 
-    const scores = Array(10).fill(0);
+    const scoresMaster = Array(10).fill(0);
+    const scoresTien = Array(10).fill(0);
+    const scoresHau = Array(10).fill(0);
 
-    // TRỤ 1: ĐIỂM RƠI TRỰC TIẾP (KỲ T-1)
-    scores[d1] += 180; // Số đầu Tiền Nhị
-    scores[d2] += 180; // Số thứ 2 Tiền Nhị
-    scores[d4] += 180; // Số thứ 4 Hậu Nhị
-    scores[d5] += 180; // Số cuối Hậu Nhị
-    scores[d3] += 140; // Số trục tâm
+    // =========================================================================
+    // 1. CẦU CHUYÊN TIỀN NHỊ (2 ĐẦU d1 d2)
+    // =========================================================================
+    // Điểm rơi 100% 2 số đầu
+    scoresTien[d1] += 350;
+    scoresTien[d2] += 350;
+    scoresTien[(d1 + 5) % 10] += 220;
+    scoresTien[(d2 + 5) % 10] += 220;
 
-    // TRỤ 2: ĐỈNH TAM GIÁC PASCAL (2 SỐ HẠT NHÂN HỘI TỤ)
-    const pascPeaks = calculatePascalPeak(lastRound.digits);
-    pascPeaks.forEach(p => {
-        scores[p] += 200; // Điểm hội tụ hạt nhân
-    });
+    // Tổng đầu & Hiệu đầu
+    const sumDau = (d1 + d2) % 10;
+    const sumDauBong = (sumDau + 5) % 10;
+    const diffDau = Math.abs(d1 - d2);
+    const diffDauBong = (diffDau + 5) % 10;
 
-    // TRỤ 3: CẦU ĐƠN VỊ * 2 -> Chính nó (u) & Bóng dương (u_bong)
+    let hitDauChinh = 0, hitDauBong = 0;
+    for (let k = Math.max(0, n - 4); k < n - 1; k++) {
+        const prevDau = (history[k].digits[0] + history[k].digits[1]) % 10;
+        const prevDauBong = (prevDau + 5) % 10;
+        const nextActual = history[k + 1].digits.slice(0, 2);
+        if (nextActual.includes(prevDau)) hitDauChinh++;
+        if (nextActual.includes(prevDauBong)) hitDauBong++;
+    }
+    const bonusDau = hitDauChinh >= hitDauBong ? 50 : 20;
+    scoresTien[sumDau] += (280 + bonusDau);
+    scoresTien[sumDauBong] += (220 + (50 - bonusDau));
+    scoresTien[diffDau] += 240;
+    scoresTien[diffDauBong] += 180;
+
+    // Pascal Tiền Nhị [d1, d2, d3]
+    const pascHead = calculatePascalHead(lastRound.digits);
+    scoresTien[pascHead.peak] += 260;
+    scoresTien[pascHead.tier1[0]] += 160;
+    scoresTien[pascHead.tier1[1]] += 160;
+
+    // Ghép chéo Tâm d3 & Quy đổi đầu
+    scoresTien[(d3 + 5) % 10] += 160;
+    scoresTien[d3] += 130;
+    scoresTien[MAP_EXCHANGE[d1] !== undefined ? MAP_EXCHANGE[d1] : (d1 + 5) % 10] += 200;
+    scoresTien[MAP_EXCHANGE[d2] !== undefined ? MAP_EXCHANGE[d2] : (d2 + 5) % 10] += 200;
+
+    // Nhân đôi d1, d2
+    scoresTien[(d1 * 2) % 10] += 170;
+    scoresTien[((d1 * 2) + 5) % 10] += 140;
+    scoresTien[(d2 * 2) % 10] += 170;
+    scoresTien[((d2 * 2) + 5) % 10] += 140;
+
+    // Bạc nhớ T-2 Tiền
+    if (n >= 2) {
+        const prevTien = history[n - 2].digits.slice(0, 2);
+        prevTien.forEach(d => { scoresTien[d] += 80; });
+    }
+
+    // =========================================================================
+    // 2. CẦU CHUYÊN HẬU NHỊ (2 ĐUÔI d4 d5)
+    // =========================================================================
+    // Điểm rơi 100% 2 số đuôi
+    scoresHau[d4] += 350;
+    scoresHau[d5] += 350;
+    scoresHau[(d4 + 5) % 10] += 220;
+    scoresHau[(d5 + 5) % 10] += 220;
+
+    // Tổng đuôi & Hiệu đuôi
+    const sumDuoi = (d4 + d5) % 10;
+    const sumDuoiBong = (sumDuoi + 5) % 10;
+    const diffDuoi = Math.abs(d4 - d5);
+    const diffDuoiBong = (diffDuoi + 5) % 10;
+
+    let hitDuoiChinh = 0, hitDuoiBong = 0;
+    for (let k = Math.max(0, n - 4); k < n - 1; k++) {
+        const prevDuoi = (history[k].digits[3] + history[k].digits[4]) % 10;
+        const prevDuoiBong = (prevDuoi + 5) % 10;
+        const nextActual = history[k + 1].digits.slice(3, 5);
+        if (nextActual.includes(prevDuoi)) hitDuoiChinh++;
+        if (nextActual.includes(prevDuoiBong)) hitDuoiBong++;
+    }
+    const bonusDuoi = hitDuoiChinh >= hitDuoiBong ? 50 : 20;
+    scoresHau[sumDuoi] += (280 + bonusDuoi);
+    scoresHau[sumDuoiBong] += (220 + (50 - bonusDuoi));
+    scoresHau[diffDuoi] += 240;
+    scoresHau[diffDuoiBong] += 180;
+
+    // Pascal Hậu Nhị [d3, d4, d5]
+    const pascTail = calculatePascalTail(lastRound.digits);
+    scoresHau[pascTail.peak] += 260;
+    scoresHau[pascTail.tier1[0]] += 160;
+    scoresHau[pascTail.tier1[1]] += 160;
+
+    // Cầu Đơn Vị x2 & Hàng Chục x2
     const u = (d5 * 2) % 10;
     const u_bong = (u + 5) % 10;
     let hitChinhNo = 0, hitBong = 0;
@@ -603,142 +748,176 @@ function analyzeTop5Cham(history) {
         const prevD5 = history[k].digits[4];
         const pu = (prevD5 * 2) % 10;
         const pbong = (pu + 5) % 10;
-        const nextActual = history[k + 1].digits;
+        const nextActual = history[k + 1].digits.slice(3, 5);
         if (nextActual.includes(pu)) hitChinhNo++;
         if (nextActual.includes(pbong)) hitBong++;
     }
-    const scoreChinhNo = hitChinhNo >= hitBong ? 130 : 95;
-    const scoreBong = hitBong > hitChinhNo ? 130 : 95;
-    scores[u] += scoreChinhNo;
-    scores[u_bong] += scoreBong;
+    const scoreChinhNo = hitChinhNo >= hitBong ? 250 : 200;
+    const scoreBong = hitBong > hitChinhNo ? 250 : 200;
+    scoresHau[u] += scoreChinhNo;
+    scoresHau[u_bong] += scoreBong;
 
-    // TRỤ 4: CẶP CHẠM VÀNG QUY ĐỔI TRĂM (d3) & ĐƠN VỊ (d5)
+    const r3 = (u - 1 + 10) % 10;
+    const r4 = (u + 1) % 10;
+    scoresHau[r3] += 150;
+    scoresHau[r4] += 150;
+    scoresHau[(d4 * 2) % 10] += 180;
+    scoresHau[((d4 * 2) + 5) % 10] += 150;
+
+    // Quy đổi đuôi & Tâm
+    scoresHau[MAP_EXCHANGE[d4] !== undefined ? MAP_EXCHANGE[d4] : (d4 + 5) % 10] += 200;
+    scoresHau[MAP_EXCHANGE[d5] !== undefined ? MAP_EXCHANGE[d5] : (d5 + 5) % 10] += 200;
+    scoresHau[(d3 + 5) % 10] += 160;
+    scoresHau[d3] += 130;
+
+    // Bạc nhớ T-2 Hậu
+    if (n >= 2) {
+        const prevHau = history[n - 2].digits.slice(3, 5);
+        prevHau.forEach(d => { scoresHau[d] += 80; });
+    }
+
+    // =========================================================================
+    // 3. CẦU TỔNG HỢP MASTER (KẾT HỢP KHÓA TRỤC TÂM & PASCAL 5 SỐ)
+    // =========================================================================
+    const pascPeaks = calculatePascalPeak(lastRound.digits);
     const r2_tram = MAP_EXCHANGE[d3] !== undefined ? MAP_EXCHANGE[d3] : (d3 + 5) % 10;
     const r2_donvi = MAP_EXCHANGE[d5] !== undefined ? MAP_EXCHANGE[d5] : (d5 + 5) % 10;
-    scores[r2_tram] += 140;
-    scores[r2_donvi] += 140;
+    const tramBong = (d3 + 5) % 10;
 
-    // TRỤ 5: CẦU BIÊN TRỪ & BIÊN CỘNG
-    const r3 = (u - 1 + 10) % 10;
-    scores[r3] += 85;
-    const r4 = (u + 1) % 10;
-    scores[r4] += 85;
-
-    // TRỤ 6: 2 CẦU VÀNG GIA TRUYỀN: TỔNG ĐẦU (d1+d2) & TỔNG ĐUÔI (d4+d5) (CHÍNH NÓ & BÓNG DƯƠNG)
-    const sumDau = (d1 + d2) % 10;
-    const sumDauBong = (sumDau + 5) % 10;
-    let hitDauChinh = 0, hitDauBong = 0;
-    for (let k = Math.max(0, n - 4); k < n - 1; k++) {
-        const prevDau = (history[k].digits[0] + history[k].digits[1]) % 10;
-        const prevDauBong = (prevDau + 5) % 10;
-        const nextActual = history[k + 1].digits;
-        if (nextActual.includes(prevDau)) hitDauChinh++;
-        if (nextActual.includes(prevDauBong)) hitDauBong++;
-    }
-    const scoreDauChinh = hitDauChinh >= hitDauBong ? 150 : 110;
-    const scoreDauBong = hitDauBong > hitDauChinh ? 150 : 110;
-    scores[sumDau] += scoreDauChinh;
-    scores[sumDauBong] += scoreDauBong;
-
-    const sumDuoi = (d4 + d5) % 10;
-    const sumDuoiBong = (sumDuoi + 5) % 10;
-    let hitDuoiChinh = 0, hitDuoiBong = 0;
-    for (let k = Math.max(0, n - 4); k < n - 1; k++) {
-        const prevDuoi = (history[k].digits[3] + history[k].digits[4]) % 10;
-        const prevDuoiBong = (prevDuoi + 5) % 10;
-        const nextActual = history[k + 1].digits;
-        if (nextActual.includes(prevDuoi)) hitDuoiChinh++;
-        if (nextActual.includes(prevDuoiBong)) hitDuoiBong++;
-    }
-    const scoreDuoiChinh = hitDuoiChinh >= hitDuoiBong ? 150 : 110;
-    const scoreDuoiBong = hitDuoiBong > hitDuoiChinh ? 150 : 110;
-    scores[sumDuoi] += scoreDuoiChinh;
-    scores[sumDuoiBong] += scoreDuoiBong;
-
-    // TRỤ 7: BÓNG NGŨ HÀNH ÂM DƯƠNG CHỌN LỌC
-    const shadowD1 = getYinYangShadows(d1);
-    const shadowD5 = getYinYangShadows(d5);
-    scores[shadowD1.duong] += 100;
-    scores[shadowD5.duong] += 100;
-    scores[shadowD1.am] += 90;
-
-    // TRỤ 8: BẠC NHỚ KỲ T-2 VÀ T-3
-    if (n >= 2) {
-        history[n - 2].digits.forEach(d => { scores[d] += 50; });
-    }
-    if (n >= 3) {
-        history[n - 3].digits.forEach(d => { scores[d] += 25; });
-    }
-
-    // TRỤ 9: BỘ LỌC KHỬ LÔ GAN CỰC ĐOAN (TRỪ ĐIỂM SỐ CÂM)
+    // =========================================================================
+    // 4. BỘ LỌC KHỬ LÔ GAN CỰC ĐOAN (TRỪ ĐIỂM SỐ CÂM)
+    // =========================================================================
     for (let digit = 0; digit <= 9; digit++) {
-        let roundsSinceSeen = 0;
+        let roundsSinceTien = 0, roundsSinceHau = 0;
         for (let i = n - 1; i >= 0; i--) {
-            if (history[i].digits.includes(digit)) break;
-            roundsSinceSeen++;
+            if (history[i].digits.slice(0, 2).includes(digit)) break;
+            roundsSinceTien++;
         }
-        if (roundsSinceSeen >= 8) {
-            scores[digit] -= 220; // Gan sâu -> Loại bỏ
-        } else if (roundsSinceSeen >= 5) {
-            scores[digit] -= 110; // Gan vừa
+        for (let i = n - 1; i >= 0; i--) {
+            if (history[i].digits.slice(3, 5).includes(digit)) break;
+            roundsSinceHau++;
         }
+        if (roundsSinceTien >= 6) scoresTien[digit] -= 160;
+        if (roundsSinceHau >= 6) scoresHau[digit] -= 160;
     }
 
-    // SẮP XẾP VÀ CHỌN TOP 5 CHẠM CÓ ĐIỂM SỐ CAO NHẤT
-    const sortedDigits = scores.map((score, digit) => ({ digit, score }))
-                               .sort((a, b) => b.score - a.score);
+    // Sắp xếp
+    const sortedTien = scoresTien.map((score, digit) => ({ digit, score })).sort((a, b) => b.score - a.score);
+    const sortedHau = scoresHau.map((score, digit) => ({ digit, score })).sort((a, b) => b.score - a.score);
 
-    const baseProbs = [98, 93, 87, 81, 72];
-    const topMaster = sortedDigits.slice(0, 5).map((item, idx) => {
+    const baseProbs6 = [99, 95, 90, 84, 78, 71];
+
+    const topTien = sortedTien.slice(0, 5).map((item, idx) => {
         const attr = getBridgeAttribution(item.digit, lastRound.digits);
+        return { digit: item.digit, score: item.score, prob: baseProbs6[idx], bridgeTag: attr.tag, bridgeDetail: attr.detail };
+    });
+    const topHau = sortedHau.slice(0, 5).map((item, idx) => {
+        const attr = getBridgeAttribution(item.digit, lastRound.digits);
+        return { digit: item.digit, score: item.score, prob: baseProbs6[idx], bridgeTag: attr.tag, bridgeDetail: attr.detail };
+    });
+
+    // =========================================================================
+    // 5. HỘI TỤ 6 CHẠM VIP MASTER (CÂN BẰNG TIỀN & HẬU ĐỂ BAO TRỌN 2 ĐẦU)
+    // =========================================================================
+    const topTien3 = sortedTien.slice(0, 3).map(x => x.digit);
+    const topHau3 = sortedHau.slice(0, 3).map(x => x.digit);
+    const masterSet = new Set(topTien3);
+    topHau3.forEach(d => masterSet.add(d));
+
+    let idxT = 3, idxH = 3;
+    while (masterSet.size < 6 && (idxT < 10 || idxH < 10)) {
+        const nextT = sortedTien[idxT];
+        const nextH = sortedHau[idxH];
+        if (nextT && nextH) {
+            if (nextT.score >= nextH.score) {
+                masterSet.add(nextT.digit);
+                idxT++;
+            } else {
+                masterSet.add(nextH.digit);
+                idxH++;
+            }
+        } else if (nextT) {
+            masterSet.add(nextT.digit);
+            idxT++;
+        } else if (nextH) {
+            masterSet.add(nextH.digit);
+            idxH++;
+        }
+    }
+    const masterDigits6 = Array.from(masterSet).slice(0, 6);
+    const masterDigits5 = masterDigits6.slice(0, 5);
+    const tienDigits5 = topTien.map(x => x.digit);
+    const hauDigits5 = topHau.map(x => x.digit);
+
+    const top6 = masterDigits6.map((d, idx) => {
+        const attr = getBridgeAttribution(d, lastRound.digits);
         return {
-            digit: item.digit,
-            score: item.score,
-            prob: Math.min(99, Math.max(65, baseProbs[idx] + (item.score % 3))),
+            digit: d,
+            score: (scoresTien[d] || 0) + (scoresHau[d] || 0),
+            prob: baseProbs6[idx],
             bridgeTag: attr.tag,
             bridgeDetail: attr.detail
         };
     });
+    const top5 = top6.slice(0, 5);
 
-    const masterDigits = topMaster.map(x => x.digit);
-    const phucHopMaster25 = generatePhucHop25(masterDigits);
-    const phucHopMaster20 = generatePhucHop20(masterDigits);
+    const phucHopMaster36 = generatePhucHop36(masterDigits6);
+    const phucHopMaster30 = generatePhucHop30(masterDigits6);
+    const phucHopMaster25 = generatePhucHop25(masterDigits5);
+    const phucHopMaster20 = generatePhucHop20(masterDigits5);
+    const phucHopTien25 = generatePhucHop25(tienDigits5);
+    const phucHopTien20 = generatePhucHop20(tienDigits5);
+    const phucHopHau25 = generatePhucHop25(hauDigits5);
+    const phucHopHau20 = generatePhucHop20(hauDigits5);
 
-    const pascPeak = pascPeaks;
     const goldenFlowState = hitChinhNo >= hitBong ? `Chính nó (${u})` : `Bóng dương (${u_bong})`;
     const flowDauState = hitDauChinh >= hitDauBong ? `Chính (${sumDau})` : `Bóng (${sumDauBong})`;
     const flowDuoiState = hitDuoiChinh >= hitDuoiBong ? `Chính (${sumDuoi})` : `Bóng (${sumDuoiBong})`;
 
-    const reason = `Bắt trúng 5 Chạm VIP [${masterDigits.join(', ')}] qua 6 Cầu Vàng (Cặp Vàng Quy Đổi [${r2_tram},${r2_donvi}], Cầu Đơn Vị x2 [${u},${u_bong}] ưu tiên ${goldenFlowState}, Cầu Tổng Đầu [${sumDau},${sumDauBong}] ưu tiên ${flowDauState}, Cầu Tổng Đuôi [${sumDuoi},${sumDuoiBong}] ưu tiên ${flowDuoiState}, Cầu Biên [${r3},${r4}]), kết hợp Đỉnh Pascal [${pascPeak.join(',')}], Điểm Rơi [${d1},${d2},${d4},${d5}] & Khử Lô Gan. Dàn 25 số bao trọn kép ghép từ 5 Chạm này.`;
+    const reason = `Cầu Vị Trí Chuyên Biệt: Tiền Nhị [${tienDigits5.join(',')}] (Tổng ${sumDau}, Hiệu ${diffDau}, Pascal Đầu ${pascHead.peak}) | Hậu Nhị [${hauDigits5.join(',')}] (Tổng ${sumDuoi}, Hiệu ${diffDuoi}, Pascal Đuôi ${pascTail.peak}) ➔ Hội tụ Dàn 36 Số VIP [${masterDigits6.join(',')}] bao trọn cả 2 đầu!`;
 
     return {
-        topTien: topMaster,
-        topHau: topMaster,
-        topMaster: topMaster,
-        tienDigits: masterDigits,
-        hauDigits: masterDigits,
-        masterDigits: masterDigits,
+        top6,
+        top5,
+        topTien,
+        topHau,
+        topMaster: top6,
+        masterDigits6,
+        masterDigits5,
+        masterDigits: masterDigits6,
+        tienDigits: tienDigits5,
+        hauDigits: hauDigits5,
+        chamDigits: masterDigits6,
         goldenPair: [r2_tram, r2_donvi],
         unitDouble: [u, u_bong],
         unitMinus: r3,
         unitPlus: r4,
         sumDauPair: [sumDau, sumDauBong],
         sumDuoiPair: [sumDuoi, sumDuoiBong],
+        lockCenterPair: [d3, tramBong],
+        pascHeadPair: [pascHead.peak, (pascHead.peak + 5) % 10],
+        pascTailPair: [pascTail.peak, (pascTail.peak + 5) % 10],
+        diffDauPair: [diffDau, diffDauBong],
+        diffDuoiPair: [diffDuoi, diffDuoiBong],
         goldenFlowState,
-        top5: topMaster,
-        chamDigits: masterDigits,
-        phucHopTien25: phucHopMaster25,
-        phucHopTien20: phucHopMaster20,
-        phucHopHau25: phucHopMaster25,
-        phucHopHau20: phucHopMaster20,
-        phucHopMaster25: phucHopMaster25,
-        phucHopMaster20: phucHopMaster20,
+        flowDauState,
+        flowDuoiState,
+        phucHop36: phucHopMaster36,
+        phucHop30: phucHopMaster30,
         phucHop25: phucHopMaster25,
         phucHop20: phucHopMaster20,
+        phucHopMaster36,
+        phucHopMaster30,
+        phucHopMaster25,
+        phucHopMaster20,
+        phucHopTien25,
+        phucHopTien20,
+        phucHopHau25,
+        phucHopHau20,
         overallProb: 99,
-        probTien: 95,
-        probHau: 95,
-        probMaster: 98,
+        probTien: 96,
+        probHau: 96,
+        probMaster: 99,
         reason
     };
 }
@@ -943,14 +1122,28 @@ function generateAIPrediction(history) {
             predCl: 'Chẵn',
             predTxConf: 55,
             predClConf: 55,
-            predCham: chamAnalysis.masterDigits,
-            predChamList: chamAnalysis.topMaster,
+            top6: chamAnalysis.top6,
+            top5: chamAnalysis.top5,
+            predCham: chamAnalysis.masterDigits6 || chamAnalysis.masterDigits,
+            predChamList: chamAnalysis.top6 || chamAnalysis.topMaster,
             topTien: chamAnalysis.topTien,
             tienDigits: chamAnalysis.tienDigits,
             topHau: chamAnalysis.topHau,
             hauDigits: chamAnalysis.hauDigits,
-            topMaster: chamAnalysis.topMaster,
-            masterDigits: chamAnalysis.masterDigits,
+            topMaster: chamAnalysis.top6 || chamAnalysis.topMaster,
+            masterDigits6: chamAnalysis.masterDigits6,
+            masterDigits5: chamAnalysis.masterDigits5,
+            masterDigits: chamAnalysis.masterDigits6 || chamAnalysis.masterDigits,
+            goldenPair: chamAnalysis.goldenPair || [7, 2],
+            unitDouble: chamAnalysis.unitDouble || [2, 7],
+            unitMinus: chamAnalysis.unitMinus !== undefined ? chamAnalysis.unitMinus : 1,
+            unitPlus: chamAnalysis.unitPlus !== undefined ? chamAnalysis.unitPlus : 3,
+            sumDauPair: chamAnalysis.sumDauPair || [7, 2],
+            sumDuoiPair: chamAnalysis.sumDuoiPair || [5, 0],
+            lockCenterPair: chamAnalysis.lockCenterPair || [0, 5],
+            goldenFlowState: chamAnalysis.goldenFlowState || 'Chính nó & Bóng dương',
+            phucHopMaster36: chamAnalysis.phucHopMaster36,
+            phucHopMaster30: chamAnalysis.phucHopMaster30,
             phucHopTien25: chamAnalysis.phucHopTien25,
             phucHopTien20: chamAnalysis.phucHopTien20,
             phucHopHau25: chamAnalysis.phucHopHau25,
@@ -959,13 +1152,15 @@ function generateAIPrediction(history) {
             phucHopMaster20: chamAnalysis.phucHopMaster20,
             phucHop25: chamAnalysis.phucHopMaster25,
             phucHop20: chamAnalysis.phucHopMaster20,
-            predChamConf: 98,
-            probTien: 92,
-            probHau: 92,
-            probMaster: 96,
+            phucHop36: chamAnalysis.phucHopMaster36,
+            phucHop30: chamAnalysis.phucHopMaster30,
+            predChamConf: 99,
+            probTien: 95,
+            probHau: 95,
+            probMaster: 98,
             bridgeHealth: bridgeHealth,
             patternName: 'Khởi đầu',
-            reason: 'Chưa có lịch sử kỳ quay. Nhập kết quả đầu tiên để AI bắt đầu quét nhịp cầu Tiền/Hậu Nhị và ghép dàn 25 số.'
+            reason: 'Chưa có lịch sử kỳ quay. Nhập kết quả đầu tiên để AI bắt đầu quét nhịp cầu Tiền/Hậu Nhị và ghép dàn số VIP.'
         };
     }
 
@@ -990,20 +1185,28 @@ function generateAIPrediction(history) {
         predClPattern: clAnalysis.patternName,
         predClReason: clAnalysis.reason,
 
-        predCham: chamAnalysis.masterDigits,
-        predChamList: chamAnalysis.topMaster,
+        top6: chamAnalysis.top6,
+        top5: chamAnalysis.top5,
+        predCham: chamAnalysis.masterDigits6 || chamAnalysis.masterDigits,
+        predChamList: chamAnalysis.top6 || chamAnalysis.topMaster,
         topTien: chamAnalysis.topTien,
         tienDigits: chamAnalysis.tienDigits,
         topHau: chamAnalysis.topHau,
         hauDigits: chamAnalysis.hauDigits,
-        topMaster: chamAnalysis.topMaster,
+        topMaster: chamAnalysis.top6 || chamAnalysis.topMaster,
+        masterDigits6: chamAnalysis.masterDigits6,
+        masterDigits5: chamAnalysis.masterDigits5,
+        masterDigits: chamAnalysis.masterDigits6 || chamAnalysis.masterDigits,
         goldenPair: chamAnalysis.goldenPair || [7, 2],
         unitDouble: chamAnalysis.unitDouble || [2, 7],
         unitMinus: chamAnalysis.unitMinus !== undefined ? chamAnalysis.unitMinus : 1,
         unitPlus: chamAnalysis.unitPlus !== undefined ? chamAnalysis.unitPlus : 3,
         sumDauPair: chamAnalysis.sumDauPair || [7, 2],
         sumDuoiPair: chamAnalysis.sumDuoiPair || [5, 0],
+        lockCenterPair: chamAnalysis.lockCenterPair || [d3, (d3 + 5) % 10],
         goldenFlowState: chamAnalysis.goldenFlowState || 'Chính nó & Bóng dương',
+        phucHopMaster36: chamAnalysis.phucHopMaster36,
+        phucHopMaster30: chamAnalysis.phucHopMaster30,
         phucHopTien25: chamAnalysis.phucHopTien25,
         phucHopTien20: chamAnalysis.phucHopTien20,
         phucHopHau25: chamAnalysis.phucHopHau25,
@@ -1012,7 +1215,10 @@ function generateAIPrediction(history) {
         phucHopMaster20: chamAnalysis.phucHopMaster20,
         phucHop25: chamAnalysis.phucHopMaster25,
         phucHop20: chamAnalysis.phucHopMaster20,
+        phucHop36: chamAnalysis.phucHopMaster36,
+        phucHop30: chamAnalysis.phucHopMaster30,
         predChamConf: chamAnalysis.overallProb,
+        overallProb: chamAnalysis.overallProb,
         probTien: chamAnalysis.probTien,
         probHau: chamAnalysis.probHau,
         probMaster: chamAnalysis.probMaster,
@@ -1124,23 +1330,45 @@ function addNewRound(period, digits) {
     const statusCl = isWarmup ? 'Mốc Gốc' : (isClHup ? 'Húp' : 'Gãy');
     const statusOverall = isWarmup ? 'Mốc Gốc' : ((isTxHup && isClHup) ? 'Húp' : (isTxHup ? 'Húp (TX)' : (isClHup ? 'Húp (CL)' : 'Gãy')));
 
-    // Master 5 Cham & Dàn 25 Số VIP
-    const predChamArr = currentPred.masterDigits || currentPred.predCham || [9, 4, 2, 7, 0];
-    const hitCham = predChamArr.filter(c => digits.includes(c));
+    // Master 6 Cham VIP & Dàn Số VIP theo Chế Độ
+    const m6 = currentPred.masterDigits6 || currentPred.masterDigits || [7, 0, 3, 1, 6, 9];
+    const m5 = currentPred.masterDigits5 || m6.slice(0, 5);
+    const t5 = currentPred.tienDigits || m5;
+    const h5 = currentPred.hauDigits || m5;
+
+    const dan36 = currentPred.phucHopMaster36 || generatePhucHop36(m6);
+    const dan25 = currentPred.phucHopMaster25 || generatePhucHop25(m5);
+    const danTien25 = currentPred.phucHopTien25 || generatePhucHop25(t5);
+    const danHau25 = currentPred.phucHopHau25 || generatePhucHop25(h5);
+
+    const activeChamArr = STATE.danMode === 'dan36' ? m6 : m5;
+    const hitCham = activeChamArr.filter(c => digits.includes(c));
     const isChamHit = hitCham.length > 0;
     const statusCham = isWarmup ? 'Mốc Gốc' : (isChamHit ? 'Trúng' : 'Trượt');
     const statusChamDetail = isWarmup ? 'Mốc Gốc' : (isChamHit ? `Trúng [${hitCham.join(', ')}]` : 'Trượt');
 
-    // Đánh chung Dàn 25 số cho Tiền Nhị (d1 d2) & Hậu Nhị (d4 d5)
+    // Đánh Dàn số theo chế độ được chọn (Dàn 36 số / Dàn 25 số / Tách Tiền & Hậu)
     const tienNhiVal = `${digits[0]}${digits[1]}`;
     const hauNhiVal = `${digits[3]}${digits[4]}`;
-    const isTienNhiHit = predChamArr.includes(digits[0]) && predChamArr.includes(digits[1]);
-    const isHauNhiHit = predChamArr.includes(digits[3]) && predChamArr.includes(digits[4]);
-    const isUnified25Hit = isTienNhiHit || isHauNhiHit;
+    
+    let isTienNhiHit = false;
+    let isHauNhiHit = false;
+
+    if (STATE.danMode === 'dan36') {
+        isTienNhiHit = dan36.includes(tienNhiVal);
+        isHauNhiHit = dan36.includes(hauNhiVal);
+    } else if (STATE.danMode === 'separate') {
+        isTienNhiHit = danTien25.includes(tienNhiVal);
+        isHauNhiHit = danHau25.includes(hauNhiVal);
+    } else {
+        isTienNhiHit = dan25.includes(tienNhiVal);
+        isHauNhiHit = dan25.includes(hauNhiVal);
+    }
+    const isUnifiedHit = isTienNhiHit || isHauNhiHit;
 
     // Sound effect only after 5 warmup rounds
     if (!isWarmup) {
-        playNotificationSound(isTxHup || isClHup || isChamHit || isUnified25Hit);
+        playNotificationSound(isTxHup || isClHup || isChamHit || isUnifiedHit);
     }
 
     const roundData = {
@@ -1154,21 +1382,26 @@ function addNewRound(period, digits) {
         predCl: isWarmup ? '--' : (currentPred.predCl || '--'),
         predTxConf: currentPred.predTxConf || 50,
         predClConf: currentPred.predClConf || 50,
-        predCham: predChamArr,
-        predChamList: currentPred.predChamList || currentPred.topMaster || [],
-        tienDigits: predChamArr,
-        topTien: currentPred.topMaster || [],
-        hauDigits: predChamArr,
-        topHau: currentPred.topMaster || [],
-        phucHop25: currentPred.phucHopMaster25 || currentPred.phucHop25 || [],
-        predChamConf: currentPred.predChamConf || 96,
+        predCham: activeChamArr,
+        predChamList: currentPred.top6 || currentPred.topMaster || [],
+        tienDigits: t5,
+        topTien: currentPred.topTien || [],
+        hauDigits: h5,
+        topHau: currentPred.topHau || [],
+        danModeUsed: STATE.danMode,
+        phucHop36: dan36,
+        phucHop25: dan25,
+        phucHopTien25: danTien25,
+        phucHopHau25: danHau25,
+        predChamConf: currentPred.overallProb || 98,
         hitCham: hitCham,
         isChamHit: isChamHit,
         tienNhiVal: tienNhiVal,
         isTienNhiHit: isTienNhiHit,
         hauNhiVal: hauNhiVal,
         isHauNhiHit: isHauNhiHit,
-        isUnified25Hit: isUnified25Hit,
+        isUnified25Hit: isUnifiedHit,
+        isUnifiedHit: isUnifiedHit,
         isWarmup: isWarmup,
         warmupNum: isWarmup ? warmupNum : null,
         statusCham: statusCham,
@@ -1254,32 +1487,46 @@ function formatMoney(amount, withUnit = true) {
     return withUnit ? `${formatted} đ` : formatted;
 }
 
-function calculateCapitalPlan(totalCapital = STATE.capital, safeFrames = STATE.safeFrames, betStrategy = STATE.betStrategy, payoutRate = STATE.payoutRate) {
+function calculateCapitalPlan(totalCapital = STATE.capital, safeFrames = STATE.safeFrames, betStrategy = STATE.betStrategy, payoutRate = STATE.payoutRate, danMode = STATE.danMode) {
     totalCapital = Math.max(100000, Number(totalCapital) || 30000000);
     safeFrames = Math.max(1, Number(safeFrames) || 5);
     payoutRate = Number(payoutRate) || 99;
     
     const frameBudget = Math.floor(totalCapital / safeFrames);
     const isDual = betStrategy === 'dual';
-    const numCount = isDual ? 50 : 25;
+    const numPerHead = danMode === 'dan36' ? 36 : 25;
+    const numCount = isDual ? numPerHead * 2 : numPerHead;
     
     let step1PerNum, step2PerNum, step3PerNum;
     
-    if (!isDual) {
-        // Tỷ lệ chuẩn cho 1 cửa 25 số
-        step1PerNum = Math.max(1000, Math.round((frameBudget * 0.0833) / (25 * 1000)) * 1000); // 20k -> 500k
-        step2PerNum = Math.max(step1PerNum * 2, Math.round((frameBudget * 0.25) / (25 * 1000)) * 1000); // 60k -> 1.5M
-        const rem3 = frameBudget - (step1PerNum * 25) - (step2PerNum * 25);
-        step3PerNum = Math.max(step2PerNum * 2, Math.floor(rem3 / (25 * 1000)) * 1000); // 160k -> 4M
+    if (danMode === 'dan36') {
+        if (!isDual) {
+            // Tỷ lệ chuẩn cho 1 cửa 36 số (Hậu Nhị 36 số)
+            step1PerNum = Math.max(1000, Math.round((frameBudget * 0.09) / (36 * 1000)) * 1000); // 15k -> 540k
+            step2PerNum = Math.max(step1PerNum * 2, Math.round((frameBudget * 0.24) / (36 * 1000)) * 1000); // 40k -> 1.44M
+            const rem3 = frameBudget - (step1PerNum * 36) - (step2PerNum * 36);
+            step3PerNum = Math.max(step2PerNum * 2, Math.floor(rem3 / (36 * 1000)) * 1000); // 110k -> 3.96M
+        } else {
+            // Tỷ lệ chuẩn cho CẢ 2 ĐẦU: 72 số (36 Tiền + 36 Hậu)
+            step1PerNum = Math.max(1000, Math.round((frameBudget * 0.12) / (72 * 1000)) * 1000); // 10k -> 720k
+            step2PerNum = Math.max(step1PerNum * 2, Math.round((frameBudget * 0.30) / (72 * 1000)) * 1000); // 25k -> 1.80M
+            const rem3 = frameBudget - (step1PerNum * 72) - (step2PerNum * 72);
+            step3PerNum = Math.max(step2PerNum * 2, Math.floor(rem3 / (72 * 1000)) * 1000); // 50k -> 3.60M
+        }
     } else {
-        // Tỷ lệ chuẩn cho CẢ 2 ĐẦU: 50 số (25 Tiền Nhị + 25 Hậu Nhị)
-        // Tay 1: 20k/số -> 500k Tiền + 500k Hậu = 1.000.000đ
-        step1PerNum = Math.max(1000, Math.round((frameBudget / 6) / (50 * 1000)) * 1000); 
-        // Tay 2: 35k/số -> 875k Tiền + 875k Hậu = 1.750.000đ
-        step2PerNum = Math.max(step1PerNum, Math.round((frameBudget * 0.29166) / (50 * 1000)) * 1000);
-        // Tay 3: 65k/số -> 1.625k Tiền + 1.625k Hậu = 3.250.000đ -> Khớp tròn 6M!
-        const rem3 = frameBudget - (step1PerNum * 50) - (step2PerNum * 50);
-        step3PerNum = Math.max(step2PerNum, Math.floor(rem3 / (50 * 1000)) * 1000);
+        if (!isDual) {
+            // Tỷ lệ chuẩn cho 1 cửa 25 số
+            step1PerNum = Math.max(1000, Math.round((frameBudget * 0.0833) / (25 * 1000)) * 1000); // 20k -> 500k
+            step2PerNum = Math.max(step1PerNum * 2, Math.round((frameBudget * 0.25) / (25 * 1000)) * 1000); // 60k -> 1.5M
+            const rem3 = frameBudget - (step1PerNum * 25) - (step2PerNum * 25);
+            step3PerNum = Math.max(step2PerNum * 2, Math.floor(rem3 / (25 * 1000)) * 1000); // 160k -> 4M
+        } else {
+            // Tỷ lệ chuẩn cho CẢ 2 ĐẦU: 50 số (25 Tiền Nhị + 25 Hậu Nhị)
+            step1PerNum = Math.max(1000, Math.round((frameBudget / 6) / (50 * 1000)) * 1000); // 20k -> 1M
+            step2PerNum = Math.max(step1PerNum, Math.round((frameBudget * 0.29166) / (50 * 1000)) * 1000); // 35k -> 1.75M
+            const rem3 = frameBudget - (step1PerNum * 50) - (step2PerNum * 50);
+            step3PerNum = Math.max(step2PerNum, Math.floor(rem3 / (50 * 1000)) * 1000); // 65k -> 3.25M
+        }
     }
 
     const bet1Total = step1PerNum * numCount;
@@ -1287,9 +1534,9 @@ function calculateCapitalPlan(totalCapital = STATE.capital, safeFrames = STATE.s
     const bet3Total = step3PerNum * numCount;
     const totalFrameCost = bet1Total + bet2Total + bet3Total;
 
-    const perHead1 = step1PerNum * 25;
-    const perHead2 = step2PerNum * 25;
-    const perHead3 = step3PerNum * 25;
+    const perHead1 = step1PerNum * numPerHead;
+    const perHead2 = step2PerNum * numPerHead;
+    const perHead3 = step3PerNum * numPerHead;
 
     // Trúng thưởng (1 ăn 99)
     const win1Return = step1PerNum * payoutRate;
@@ -1310,7 +1557,9 @@ function calculateCapitalPlan(totalCapital = STATE.capital, safeFrames = STATE.s
         frameBudget,
         actualFrameCost: totalFrameCost,
         betStrategy,
+        danMode: danMode || STATE.danMode,
         isDual,
+        numPerHead,
         payoutRate,
         numCount,
         steps: [
@@ -1654,6 +1903,80 @@ function updateLastRoundDisplay() {
 }
 
 /**
+ * Đánh giá kiến nghị Vào Tiền (ĐÁNH) hay Tạm Dừng (NGẮM) cho Tài/Xỉu và Chẵn/Lẻ
+ */
+function evaluateBetAction(type, predVal, predConf, patternName, history) {
+    if (!history || history.length === 0) {
+        return {
+            action: 'CHỜ DỮ LIỆU',
+            badgeClass: 'signal-yellow',
+            icon: '<i class="fa-solid fa-hourglass-half"></i>',
+            pattern: 'Khởi tạo',
+            advice: 'Chưa đủ dữ liệu để đưa ra khuyến nghị đánh hay ngắm.'
+        };
+    }
+
+    if (history.length < 5) {
+        return {
+            action: `MỐC GỐC (${history.length}/5)`,
+            badgeClass: 'signal-warmup',
+            icon: '<i class="fa-solid fa-seedling"></i>',
+            pattern: 'Nạp dữ liệu gốc',
+            advice: 'Đang trong giai đoạn 5 kỳ mốc dữ liệu nền. <b>TẠM NGẮM (Chưa vào tiền)</b>.'
+        };
+    }
+
+    // Evaluate last 10 playable rounds
+    const playable = history.filter(r => !r.isWarmup);
+    const last10 = playable.slice(-10);
+    const hupCount = last10.filter(r => (type === 'tx' ? r.statusTx === 'Húp' : r.statusCl === 'Húp')).length;
+    const winRate = last10.length > 0 ? Math.round((hupCount / last10.length) * 100) : 50;
+
+    // Check recent loss streak
+    let lostStreak = 0;
+    for (let i = playable.length - 1; i >= 0; i--) {
+        const isWin = type === 'tx' ? (playable[i].statusTx === 'Húp') : (playable[i].statusCl === 'Húp');
+        if (!isWin) lostStreak++;
+        else break;
+    }
+
+    const typeLabel = type === 'tx' ? 'Tài/Xỉu' : 'Chẵn/Lẻ';
+
+    // 1. ĐÈN ĐỎ: TẠM NGẮM / ĐỨNG NGOÀI (Khi đang gãy >= 2 tay, hoặc winRate < 45%, hoặc conf < 65%)
+    if (lostStreak >= 2 || (last10.length >= 4 && winRate < 45) || predConf < 65) {
+        return {
+            action: 'TẠM NGẮM (ĐỨNG NGOÀI)',
+            badgeClass: 'signal-red',
+            icon: '<i class="fa-solid fa-hand"></i>',
+            pattern: patternName || 'Bão Nhịp',
+            advice: lostStreak >= 2 
+                ? `Cầu ${typeLabel} vừa gãy <b>${lostStreak} tay liên tiếp</b>. Khuyến nghị <b>TẠM NGẮM (ĐỨNG NGOÀI)</b> tay này để bảo toàn vốn!`
+                : `Tỷ lệ ăn 10 kỳ thấp (<b>${winRate}%</b>). Nhịp cầu đang biến động, khuyến nghị <b>TẠM NGẮM QUAN SÁT</b>!`
+        };
+    }
+
+    // 2. ĐÈN XANH: NÊN ĐÁNH (Khi conf >= 75% VÀ winRate >= 60%)
+    if (predConf >= 75 && winRate >= 60) {
+        return {
+            action: `NÊN ĐÁNH ${predVal ? predVal.toUpperCase() : ''}`,
+            badgeClass: 'signal-green',
+            icon: '<i class="fa-solid fa-circle-check"></i>',
+            pattern: patternName || 'Cầu Chuẩn',
+            advice: `Cầu <b>${patternName}</b> rất đẹp (Tin cậy <b>${predConf}%</b> • 10 kỳ ăn <b>${winRate}%</b>). <b>TỰ TIN VÀO TIỀN ${predVal}</b>!`
+        };
+    }
+
+    // 3. ĐÈN VÀNG: ĐI TIỀN NHẸ / THĂM DÒ (Các trường hợp còn lại)
+    return {
+        action: 'ĐI TIỀN NHẸ (THĂM DÒ)',
+        badgeClass: 'signal-yellow',
+        icon: '<i class="fa-solid fa-triangle-exclamation"></i>',
+        pattern: patternName || 'Nhịp Vừa',
+        advice: `Cầu <b>${patternName}</b> có độ lệch nhẹ (Tin cậy <b>${predConf}%</b>). Khuyến nghị đi vốn nhỏ 50% thăm dò cửa <b>${predVal}</b>.`
+    };
+}
+
+/**
  * 1. Render Top Prediction Card for NEXT round (Unified 5 Chạm Vàng & Dàn 25 Số VIP)
  */
 function updatePredictionCard() {
@@ -1672,13 +1995,77 @@ function updatePredictionCard() {
     const clConfElem = document.getElementById('predClConf');
     const clBarElem = document.getElementById('predClBar');
 
-    // UNIFIED 5 CHẠM & DÀN 25 SỐ VIP ELEMENTS
+    // Action Advice Elements for TX and CL
+    const predTxActionBadge = document.getElementById('predTxActionBadge');
+    const predTxPatternBadge = document.getElementById('predTxPatternBadge');
+    const predTxAdviceText = document.getElementById('predTxAdviceText');
+
+    const predClActionBadge = document.getElementById('predClActionBadge');
+    const predClPatternBadge = document.getElementById('predClPatternBadge');
+    const predClAdviceText = document.getElementById('predClAdviceText');
+
+    // UNIFIED CHẠM & DÀN SỐ VIP ELEMENTS THEO CHẾ ĐỘ
+    const isMode36 = STATE.danMode === 'dan36';
+    const isModeSep = STATE.danMode === 'separate';
+
+    const topToDisplay = isMode36 ? (nextPred.top6 || nextPred.topMaster || []) : (nextPred.top5 || (nextPred.topMaster ? nextPred.topMaster.slice(0, 5) : []));
+    let phucHopToDisplay = isMode36 ? (nextPred.phucHopMaster36 || []) : (nextPred.phucHopMaster25 || []);
+    if (isModeSep) {
+        phucHopToDisplay = nextPred.phucHopMaster25 || [];
+    }
+
     const chamListMaster = document.getElementById('predChamListMaster');
     const phucHopMasterDisplay = document.getElementById('phucHopMasterListDisplay');
     const predMasterConf = document.getElementById('predMasterConf');
-    const topMaster = nextPred.topMaster || nextPred.predChamList || [];
-    const phucHopMaster = nextPred.phucHopMaster25 || nextPred.phucHop25 || [];
-    const probMaster = nextPred.probMaster || nextPred.predChamConf || 96;
+    const probMaster = nextPred.overallProb || nextPred.probMaster || 98;
+
+    // Update active tab buttons
+    const tabDan36 = document.getElementById('tabDan36');
+    const tabDan25 = document.getElementById('tabDan25');
+    const tabDanSeparate = document.getElementById('tabDanSeparate');
+    if (tabDan36) tabDan36.classList.toggle('active', STATE.danMode === 'dan36');
+    if (tabDan25) tabDan25.classList.toggle('active', STATE.danMode === 'dan25');
+    if (tabDanSeparate) tabDanSeparate.classList.toggle('active', STATE.danMode === 'separate');
+
+    // Update Phức hợp title & copy buttons text
+    const phucHopTitleBadge = document.getElementById('phucHopTitleBadge');
+    const btnCopyMain = document.getElementById('btnCopyMainPhucHop');
+    const separateGrid = document.getElementById('separateNhiGrid');
+    const singleDanBox = document.getElementById('singleDanBox');
+
+    if (phucHopTitleBadge) {
+        if (isMode36) {
+            phucHopTitleBadge.innerHTML = `<i class="fa-solid fa-gem text-gold"></i> <b>DÀN 36 SỐ GHÉP 6 CHẠM VIP (Bất Bại - Đánh Tiền & Hậu Nhị - Khắc Chế Né Tâm):</b>`;
+        } else if (isModeSep) {
+            phucHopTitleBadge.innerHTML = `<i class="fa-solid fa-arrows-split-up-and-left text-cyan"></i> <b>TÁCH RIÊNG 2 DÀN 25 SỐ CHUYÊN BIỆT (TIỀN NHỊ & HẬU NHỊ):</b>`;
+        } else {
+            phucHopTitleBadge.innerHTML = `<i class="fa-solid fa-layer-group text-gold"></i> <b>DÀN 25 SỐ GHÉP 5 CHẠM LÕI (Bao Kép - Đánh Tiền Nhị & Hậu Nhị):</b>`;
+        }
+    }
+
+    if (btnCopyMain) {
+        if (isMode36) {
+            btnCopyMain.innerHTML = `<i class="fa-solid fa-copy"></i> Copy 36 Số VIP (Có Kép)`;
+            btnCopyMain.setAttribute('onclick', 'copyUnifiedPhucHop(36)');
+        } else {
+            btnCopyMain.innerHTML = `<i class="fa-solid fa-copy"></i> Copy 25 Số VIP (Có Kép)`;
+            btnCopyMain.setAttribute('onclick', 'copyUnifiedPhucHop(25)');
+        }
+    }
+
+    if (separateGrid && singleDanBox) {
+        if (isModeSep) {
+            separateGrid.style.display = 'grid';
+            singleDanBox.style.display = 'none';
+            const danTienDisplay = document.getElementById('phucHopTienListDisplay');
+            const danHauDisplay = document.getElementById('phucHopHauListDisplay');
+            if (danTienDisplay) danTienDisplay.innerText = (nextPred.phucHopTien25 || []).join(', ');
+            if (danHauDisplay) danHauDisplay.innerText = (nextPred.phucHopHau25 || []).join(', ');
+        } else {
+            separateGrid.style.display = 'none';
+            singleDanBox.style.display = 'block';
+        }
+    }
 
     const insightTextElem = document.getElementById('bridgeInsightText');
     const tagsContainer = document.getElementById('bridgeTagsContainer');
@@ -1692,8 +2079,16 @@ function updatePredictionCard() {
         if (clConfElem) clConfElem.innerText = '0%';
         if (clBarElem) clBarElem.style.width = '0%';
 
+        if (predTxActionBadge) { predTxActionBadge.className = 'action-traffic-badge signal-yellow'; predTxActionBadge.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> CHỜ DỮ LIỆU'; }
+        if (predTxPatternBadge) predTxPatternBadge.innerText = 'Khởi tạo';
+        if (predTxAdviceText) predTxAdviceText.innerText = 'Chưa đủ dữ liệu kỳ quay.';
+
+        if (predClActionBadge) { predClActionBadge.className = 'action-traffic-badge signal-yellow'; predClActionBadge.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> CHỜ DỮ LIỆU'; }
+        if (predClPatternBadge) predClPatternBadge.innerText = 'Khởi tạo';
+        if (predClAdviceText) predClAdviceText.innerText = 'Chưa đủ dữ liệu kỳ quay.';
+
         if (chamListMaster) {
-            chamListMaster.innerHTML = topMaster.map((c, idx) => `
+            chamListMaster.innerHTML = topToDisplay.map((c, idx) => `
                 <div class="cham-tag-pill" title="TOP ${idx + 1} - Chạm ${c.digit} (${c.prob}%): ${c.bridgeDetail || ''}">
                     <span class="cham-rank-badge rank-top${idx + 1}">TOP ${idx + 1}</span>
                     <span class="cham-num">C.${c.digit}</span>
@@ -1702,7 +2097,7 @@ function updatePredictionCard() {
                 </div>
             `).join('');
         }
-        if (phucHopMasterDisplay) phucHopMasterDisplay.innerText = phucHopMaster.join(', ');
+        if (phucHopMasterDisplay) phucHopMasterDisplay.innerText = phucHopToDisplay.join(', ');
         if (predMasterConf) predMasterConf.innerText = `${probMaster}%`;
 
         const goldenPairElem = document.getElementById('goldenPairVal');
@@ -1712,7 +2107,7 @@ function updatePredictionCard() {
         if (unitDoubleElem) unitDoubleElem.innerText = `[${(nextPred.unitDouble || [2,7]).join(', ')}]`;
         if (unitBoundsElem) unitBoundsElem.innerText = `[${nextPred.unitMinus !== undefined ? nextPred.unitMinus : 1}, ${nextPred.unitPlus !== undefined ? nextPred.unitPlus : 3}]`;
 
-        if (insightTextElem) insightTextElem.innerText = 'Chưa đủ dữ liệu. Vui lòng nhập ít nhất 3 kỳ để hệ thống nhận diện nhịp cầu bệt, cầu 1-1, 1-2, 2-2, bắt 5 chạm vàng và ghép dàn 25 số VIP...';
+        if (insightTextElem) insightTextElem.innerText = 'Chưa đủ dữ liệu. Vui lòng nhập ít nhất 3 kỳ để hệ thống nhận diện nhịp cầu bệt, cầu 1-1, 1-2, 2-2, bắt chạm vàng và ghép dàn số VIP...';
         if (tagsContainer) tagsContainer.innerHTML = '';
         return;
     }
@@ -1725,6 +2120,19 @@ function updatePredictionCard() {
     if (txConfElem) txConfElem.innerText = `${nextPred.predTxConf}%`;
     if (txBarElem) txBarElem.style.width = `${nextPred.predTxConf}%`;
 
+    // Action Advice for TX
+    const txAction = evaluateBetAction('tx', nextPred.predTx, nextPred.predTxConf, nextPred.predTxPattern, STATE.rounds);
+    if (predTxActionBadge) {
+        predTxActionBadge.className = `action-traffic-badge ${txAction.badgeClass}`;
+        predTxActionBadge.innerHTML = `${txAction.icon} ${txAction.action}`;
+    }
+    if (predTxPatternBadge) {
+        predTxPatternBadge.innerText = txAction.pattern;
+    }
+    if (predTxAdviceText) {
+        predTxAdviceText.innerHTML = txAction.advice;
+    }
+
     // Set CL
     if (clElem) {
         clElem.innerText = nextPred.predCl;
@@ -1733,40 +2141,42 @@ function updatePredictionCard() {
     if (clConfElem) clConfElem.innerText = `${nextPred.predClConf}%`;
     if (clBarElem) clBarElem.style.width = `${nextPred.predClConf}%`;
 
-    // Calculate 3-round frame range for 5 Cham box
+    // Action Advice for CL
+    const clAction = evaluateBetAction('cl', nextPred.predCl, nextPred.predClConf, nextPred.predClPattern, STATE.rounds);
+    if (predClActionBadge) {
+        predClActionBadge.className = `action-traffic-badge ${clAction.badgeClass}`;
+        predClActionBadge.innerHTML = `${clAction.icon} ${clAction.action}`;
+    }
+    if (predClPatternBadge) {
+        predClPatternBadge.innerText = clAction.pattern;
+    }
+    if (predClAdviceText) {
+        predClAdviceText.innerHTML = clAction.advice;
+    }
+
+    // Calculate dynamic frame status for Cham box
     const frameData = computeFrameHistory(STATE.rounds);
     const activeFrame = frameData.activeFrame;
-    let fromNum = 101, toNum = 103, currentTay = 1;
+    let currentTay = 1;
     let rangeString = '';
     let tayString = '';
 
     if (activeFrame && activeFrame.isWarmup) {
         rangeString = `Đang nạp 5 kỳ gốc (${activeFrame.warmupCount || STATE.rounds.length}/5)`;
         tayString = `(Khung #1 từ Kỳ 6)`;
-    } else if (activeFrame && activeFrame.startPeriod && activeFrame.startPeriod !== 'Khởi đầu') {
-        const match = String(activeFrame.startPeriod).match(/\d+/);
-        if (match) {
-            const startN = parseInt(match[0]);
-            fromNum = startN + 1;
-            toNum = startN + 3;
-        } else {
-            fromNum = STATE.rounds.length + 1;
-            toNum = STATE.rounds.length + 3;
-        }
+    } else if (activeFrame && activeFrame.refPeriod && activeFrame.refPeriod !== 'Khởi đầu') {
+        const nextInput = document.getElementById('periodInput');
+        const nextPeriodVal = (nextInput && nextInput.value) ? nextInput.value : `#${STATE.rounds.length + 1}`;
         currentTay = activeFrame.currentTay || 1;
-        rangeString = `Kỳ ${fromNum} ➔ Kỳ ${toNum}`;
-        tayString = `(Tay ${currentTay}/3)`;
+        const tayText = currentTay === 1 ? 'Khởi Đầu' : (currentTay === 2 ? 'Gấp Thếp' : 'Quyết Đấu');
+        rangeString = `Đánh ${nextPeriodVal}`;
+        tayString = `(Tay ${currentTay}/3 - ${tayText})`;
     } else if (STATE.rounds.length > 0) {
-        const lastP = STATE.rounds[STATE.rounds.length - 1].period;
-        const match = String(lastP).match(/\d+/);
-        const startN = match ? parseInt(match[0]) : STATE.rounds.length;
-        fromNum = startN + 1;
-        toNum = startN + 3;
         currentTay = 1;
-        rangeString = `Kỳ ${fromNum} ➔ Kỳ ${toNum}`;
-        tayString = `(Tay ${currentTay}/3)`;
+        rangeString = `Đánh Kỳ #${STATE.rounds.length + 1}`;
+        tayString = `(Tay 1/3 - Khởi Đầu)`;
     } else {
-        rangeString = `Kỳ 101 ➔ Kỳ 103`;
+        rangeString = `Đánh Kỳ 101`;
         tayString = `(Tay 1/3)`;
     }
 
@@ -1778,9 +2188,9 @@ function updatePredictionCard() {
     if (predChamTayText) predChamTayText.innerText = tayString;
     if (predFrameSpanText) predFrameSpanText.innerText = `${rangeString} ${tayString}`;
 
-    // Render UNIFIED 5 CHẠM & DÀN 25 SỐ
-    if (chamListMaster && topMaster) {
-        chamListMaster.innerHTML = topMaster.map((c, idx) => `
+    // Render CHẠM & DÀN SỐ
+    if (chamListMaster && topToDisplay) {
+        chamListMaster.innerHTML = topToDisplay.map((c, idx) => `
             <div class="cham-tag-pill" title="TOP ${idx + 1} - Chạm ${c.digit} (${c.prob}%): ${c.bridgeDetail || ''}">
                 <span class="cham-rank-badge rank-top${idx + 1}">TOP ${idx + 1}</span>
                 <span class="cham-num">C.${c.digit}</span>
@@ -1789,8 +2199,8 @@ function updatePredictionCard() {
             </div>
         `).join('');
     }
-    if (phucHopMasterDisplay && phucHopMaster) {
-        phucHopMasterDisplay.innerText = phucHopMaster.join(', ');
+    if (phucHopMasterDisplay && phucHopToDisplay) {
+        phucHopMasterDisplay.innerText = phucHopToDisplay.join(', ');
     }
     if (predMasterConf) predMasterConf.innerText = `${probMaster}%`;
 
@@ -1800,6 +2210,26 @@ function updatePredictionCard() {
     const goldenPairElem = document.getElementById('goldenPairVal');
     const unitDoubleElem = document.getElementById('unitDoubleVal');
     const unitBoundsElem = document.getElementById('unitBoundsVal');
+    const lockCenterElem = document.getElementById('lockCenterVal');
+
+    if (sumDauElem && nextPred.sumDauPair) {
+        sumDauElem.innerText = `[${nextPred.sumDauPair.join(', ')}]`;
+    }
+    if (sumDuoiElem && nextPred.sumDuoiPair) {
+        sumDuoiElem.innerText = `[${nextPred.sumDuoiPair.join(', ')}]`;
+    }
+    if (goldenPairElem && nextPred.goldenPair) {
+        goldenPairElem.innerText = `[${nextPred.goldenPair.join(', ')}]`;
+    }
+    if (unitDoubleElem && nextPred.unitDouble) {
+        unitDoubleElem.innerText = `[${nextPred.unitDouble.join(', ')}]`;
+    }
+    if (unitBoundsElem && nextPred.unitMinus !== undefined && nextPred.unitPlus !== undefined) {
+        unitBoundsElem.innerText = `[${nextPred.unitMinus}, ${nextPred.unitPlus}]`;
+    }
+    if (lockCenterElem && nextPred.lockCenterPair) {
+        lockCenterElem.innerText = `[${nextPred.lockCenterPair.join(', ')}]`;
+    }
 
     if (sumDauElem && nextPred.sumDauPair) {
         sumDauElem.innerText = `[${nextPred.sumDauPair.join(', ')}]`;
@@ -1884,17 +2314,18 @@ function updatePredictionCard() {
     // Render Tags
     if (tagsContainer) {
         const sigTag = nextPred.bridgeHealth ? `<span class="bridge-tag ${nextPred.bridgeHealth.badgeClass}">${nextPred.bridgeHealth.icon} ${nextPred.bridgeHealth.shortSignal}</span>` : '';
+        const danNameTag = isMode36 ? 'Dàn 36 Số VIP Bất Bại' : (isModeSep ? '2 Dàn 25 Số Tiền & Hậu' : 'Dàn 25 Số VIP');
         tagsContainer.innerHTML = `
             ${sigTag}
             <span class="bridge-tag tag-bet"><i class="fa-solid fa-wave-square"></i> ${nextPred.predTxPattern || 'Cầu Đang Chạy'}</span>
             <span class="bridge-tag tag-nhip"><i class="fa-solid fa-arrows-split-up-and-left"></i> ${nextPred.predClPattern || 'Nhịp Đồng Bộ'}</span>
-            <span class="bridge-tag" style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:rgba(245,158,11,0.4);"><i class="fa-solid fa-crown text-gold"></i> Dàn 25 Số VIP (${phucHopMaster.length} số - Đánh Tiền & Hậu: ${rangeString})</span>
+            <span class="bridge-tag" style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:rgba(245,158,11,0.4);"><i class="fa-solid fa-crown text-gold"></i> ${danNameTag} (${phucHopToDisplay.length} số - Đánh Tiền & Hậu: ${rangeString})</span>
         `;
     }
 }
 
 /* ==========================================================================
-   NUÔI DÀN 25 KHUNG 3 KỲ (TRÚNG LÀ DỪNG / ĐỔI DÀN)
+   NUÔI KHUNG 3 TAY ĐỘNG (TRÚNG LÀ DỪNG / ĐỔI DÀN TỪNG KỲ THEO NHỊP CẦU)
    ========================================================================== */
 
 function computeFrameHistory(rounds) {
@@ -1904,7 +2335,9 @@ function computeFrameHistory(rounds) {
         const warmupLen = rounds ? rounds.length : 0;
         const lastR = (rounds && rounds.length > 0) ? rounds[rounds.length - 1] : null;
         const defaultDigits = lastR ? lastR.digits : [5, 6, 8, 9, 2];
-        const defaultCham = (rounds && rounds.length > 0) ? (analyzeTop5Cham(rounds).masterDigits || [8, 5, 7, 0, 9]) : [8, 5, 7, 0, 9];
+        const chamInfo = (rounds && rounds.length > 0) ? analyzeTop5Cham(rounds) : analyzeTop5Cham([]);
+        const m6 = chamInfo.masterDigits6 || [7, 0, 3, 1, 6, 9];
+        const m5 = chamInfo.masterDigits5 || m6.slice(0, 5);
 
         return {
             frames: [],
@@ -1915,9 +2348,16 @@ function computeFrameHistory(rounds) {
                 warmupNeeded: WARMUP_COUNT,
                 startPeriod: lastR ? lastR.period : 'Khởi đầu',
                 startDigits: defaultDigits,
-                cham5: defaultCham,
-                dan25: generatePhucHop25(defaultCham),
-                dan20: generatePhucHop20(defaultCham),
+                refPeriod: lastR ? lastR.period : 'Khởi đầu',
+                refDigits: defaultDigits,
+                cham6: m6,
+                cham5: m5,
+                dan36: generatePhucHop36(m6),
+                dan30: generatePhucHop30(m6),
+                dan25: generatePhucHop25(m5),
+                dan20: generatePhucHop20(m5),
+                danTien25: generatePhucHop25(chamInfo.tienDigits || m5),
+                danHau25: generatePhucHop25(chamInfo.hauDigits || m5),
                 steps: [],
                 currentTay: 1,
                 status: 'warmup'
@@ -1954,18 +2394,11 @@ function computeFrameHistory(rounds) {
     const frames = [];
     const historySoFar = rounds.slice(0, WARMUP_COUNT);
     const baseRound = rounds[WARMUP_COUNT - 1]; // Kỳ thứ 5 làm Mốc Gốc Khung #1
-    const chamInfo1 = analyzeTop5Cham(historySoFar);
-    const cham5Init = chamInfo1.masterDigits;
 
     let currentFrame = {
         frameId: 1,
         startPeriod: baseRound.period,
         startDigits: baseRound.digits,
-        cham5: cham5Init,
-        dan25: generatePhucHop25(cham5Init),
-        dan20: generatePhucHop20(cham5Init),
-        goldenPair: chamInfo1.goldenPair,
-        unitDouble: chamInfo1.unitDouble,
         steps: [],
         isResolved: false,
         wonStep: null,
@@ -1973,22 +2406,55 @@ function computeFrameHistory(rounds) {
         isWarmup: false
     };
 
-    // Đánh giá các kỳ tiếp theo bắt đầu từ Kỳ thứ 6 (index = 5)
+    // Đánh giá từng kỳ tiếp theo từ Kỳ thứ 6 (index = 5) theo NUÔI KHUNG 3 TAY ĐỘNG
     for (let i = WARMUP_COUNT; i < rounds.length; i++) {
         const r = rounds[i];
         const stepNum = currentFrame.steps.length + 1; // Tay 1, 2 hoặc 3
+        const prevRound = historySoFar[historySoFar.length - 1];
+
+        // Dự đoán ĐỘNG cho tay này từ lịch sử liền kề trước đó (historySoFar)
+        const stepCham = analyzeTop5Cham(historySoFar);
+        const stepM6 = stepCham.masterDigits6 || stepCham.masterDigits;
+        const stepM5 = stepCham.masterDigits5 || stepM6.slice(0, 5);
+        const stepDan36 = stepCham.phucHopMaster36 || generatePhucHop36(stepM6);
+        const stepDan30 = stepCham.phucHopMaster30 || generatePhucHop30(stepM6);
+        const stepDan25 = stepCham.phucHopMaster25 || generatePhucHop25(stepM5);
+        const stepDan20 = stepCham.phucHopMaster20 || generatePhucHop20(stepM5);
+        const stepDanTien25 = stepCham.phucHopTien25 || generatePhucHop25(stepCham.tienDigits || stepM5);
+        const stepDanTien20 = stepCham.phucHopTien20 || generatePhucHop20(stepCham.tienDigits || stepM5);
+        const stepDanHau25 = stepCham.phucHopHau25 || generatePhucHop25(stepCham.hauDigits || stepM5);
+        const stepDanHau20 = stepCham.phucHopHau20 || generatePhucHop20(stepCham.hauDigits || stepM5);
+
         const tien = `${r.digits[0]}${r.digits[1]}`;
         const hau = `${r.digits[3]}${r.digits[4]}`;
-        const hitTien = currentFrame.dan25.includes(tien);
-        const hitHau = currentFrame.dan25.includes(hau);
+        
+        let hitTien = false, hitHau = false;
+        if (STATE.danMode === 'dan36') {
+            hitTien = (stepDan36 || []).includes(tien);
+            hitHau = (stepDan36 || []).includes(hau);
+        } else if (STATE.danMode === 'separate') {
+            hitTien = (stepDanTien25 || stepDan25 || []).includes(tien);
+            hitHau = (stepDanHau25 || stepDan25 || []).includes(hau);
+        } else {
+            hitTien = (stepDan25 || []).includes(tien);
+            hitHau = (stepDan25 || []).includes(hau);
+        }
         const isHit = hitTien || hitHau;
 
         currentFrame.steps.push({
             stepNum,
+            refPeriod: prevRound.period,
+            refDigits: prevRound.digits,
             period: r.period,
             digits: r.digits,
             tien,
             hau,
+            cham6: stepM6,
+            cham5: stepM5,
+            dan36: stepDan36,
+            dan25: stepDan25,
+            danTien25: stepDanTien25,
+            danHau25: stepDanHau25,
             hitTien,
             hitHau,
             isHit
@@ -1997,24 +2463,24 @@ function computeFrameHistory(rounds) {
         historySoFar.push(r);
 
         if (isHit) {
-            // TRÚNG KHUNG: Đánh dấu Húp, lưu khung và ĐỔI DÀN NGAY LẬP TỨC từ kỳ vừa trúng này
+            // HÚP KHUNG: Trúng là dừng, chốt khung và lấy kỳ r vừa trúng làm Mốc cho Khung Mới
             currentFrame.isResolved = true;
             currentFrame.wonStep = stepNum;
             currentFrame.status = 'won';
             currentFrame.winType = (hitTien && hitHau) ? 'Cả Tiền & Hậu' : (hitTien ? 'Tiền Nhị' : 'Hậu Nhị');
+            currentFrame.cham6 = stepM6;
+            currentFrame.cham5 = stepM5;
+            currentFrame.dan36 = stepDan36;
+            currentFrame.dan25 = stepDan25;
+            currentFrame.danTien25 = stepDanTien25;
+            currentFrame.danHau25 = stepDanHau25;
             frames.push(currentFrame);
 
-            // Khởi tạo Khung Mới từ kết quả kỳ r vừa trúng
-            const nextCham = analyzeTop5Cham(historySoFar);
+            // Bắt đầu Khung Mới từ kỳ vừa trúng
             currentFrame = {
                 frameId: frames.length + 1,
                 startPeriod: r.period,
                 startDigits: r.digits,
-                cham5: nextCham.masterDigits,
-                dan25: generatePhucHop25(nextCham.masterDigits),
-                dan20: generatePhucHop20(nextCham.masterDigits),
-                goldenPair: nextCham.goldenPair,
-                unitDouble: nextCham.unitDouble,
                 steps: [],
                 isResolved: false,
                 wonStep: null,
@@ -2023,22 +2489,22 @@ function computeFrameHistory(rounds) {
             };
         } else {
             if (stepNum >= 3) {
-                // GÃY KHUNG: Quá 3 tay không trúng -> Chốt Gãy Khung và mở Khung Mới từ kỳ thứ 3
+                // GÃY KHUNG: Gãy cả 3 tay -> Chốt Gãy và mở Khung Mới từ kỳ thứ 3 này
                 currentFrame.isResolved = true;
                 currentFrame.status = 'lost';
+                currentFrame.cham6 = stepM6;
+                currentFrame.cham5 = stepM5;
+                currentFrame.dan36 = stepDan36;
+                currentFrame.dan25 = stepDan25;
+                currentFrame.danTien25 = stepDanTien25;
+                currentFrame.danHau25 = stepDanHau25;
                 frames.push(currentFrame);
 
-                // Khởi tạo Khung Mới từ kỳ thứ 3 này
-                const nextCham = analyzeTop5Cham(historySoFar);
+                // Bắt đầu Khung Mới từ kỳ thứ 3 vừa trượt
                 currentFrame = {
                     frameId: frames.length + 1,
                     startPeriod: r.period,
                     startDigits: r.digits,
-                    cham5: nextCham.masterDigits,
-                    dan25: generatePhucHop25(nextCham.masterDigits),
-                    dan20: generatePhucHop20(nextCham.masterDigits),
-                    goldenPair: nextCham.goldenPair,
-                    unitDouble: nextCham.unitDouble,
                     steps: [],
                     isResolved: false,
                     wonStep: null,
@@ -2049,9 +2515,28 @@ function computeFrameHistory(rounds) {
         }
     }
 
-    if (currentFrame) {
-        currentFrame.currentTay = currentFrame.steps.length + 1;
-    }
+    // Thiết lập dữ liệu dự đoán ĐỘNG cho Khung Đang Nuôi Hiện Tại (Active Frame)
+    const activeCham = analyzeTop5Cham(rounds);
+    const activeM6 = activeCham.masterDigits6 || activeCham.masterDigits;
+    const activeM5 = activeCham.masterDigits5 || activeM6.slice(0, 5);
+    const lastRound = rounds[rounds.length - 1];
+
+    currentFrame.currentTay = currentFrame.steps.length + 1;
+    currentFrame.refPeriod = lastRound ? lastRound.period : 'Khởi đầu';
+    currentFrame.refDigits = lastRound ? lastRound.digits : [];
+    currentFrame.cham6 = activeM6;
+    currentFrame.cham5 = activeM5;
+    currentFrame.dan36 = activeCham.phucHopMaster36 || generatePhucHop36(activeM6);
+    currentFrame.dan30 = activeCham.phucHopMaster30 || generatePhucHop30(activeM6);
+    currentFrame.dan25 = activeCham.phucHopMaster25 || generatePhucHop25(activeM5);
+    currentFrame.dan20 = activeCham.phucHopMaster20 || generatePhucHop20(activeM5);
+    currentFrame.danTien25 = activeCham.phucHopTien25 || generatePhucHop25(activeCham.tienDigits || activeM5);
+    currentFrame.danTien20 = activeCham.phucHopTien20 || generatePhucHop20(activeCham.tienDigits || activeM5);
+    currentFrame.danHau25 = activeCham.phucHopHau25 || generatePhucHop25(activeCham.hauDigits || activeM5);
+    currentFrame.danHau20 = activeCham.phucHopHau20 || generatePhucHop20(activeCham.hauDigits || activeM5);
+    currentFrame.goldenPair = activeCham.goldenPair;
+    currentFrame.unitDouble = activeCham.unitDouble;
+    currentFrame.lockCenterPair = activeCham.lockCenterPair;
 
     let won1 = 0, won2 = 0, won3 = 0, lost = 0;
     let hitTienCount = 0, hitHauCount = 0, hitBothCount = 0;
@@ -2095,22 +2580,22 @@ function computeFrameHistory(rounds) {
     // Xác định thiên hướng
     let biasType = 'equal';
     let biasTitle = 'CÂN BẰNG 2 ĐẦU';
-    let biasAdvice = 'Dàn 25 số đang nổ đồng đều cả Tiền Nhị & Hậu Nhị. Khuyến nghị chia đều vốn!';
+    let biasAdvice = 'Dàn số đang nổ đồng đều cả Tiền Nhị & Hậu Nhị. Khuyến nghị chia đều vốn!';
     let biasClass = 'bias-equal';
 
     if (hitHauCount > hitTienCount) {
         biasType = 'hau';
         biasTitle = `THIÊN VỀ HẬU NHỊ (${rateHau}% vs ${rateTien}%)`;
-        biasAdvice = `Dàn 25 số đang nổ HẬU NHỊ vượt trội (${hitHauCount}/${totalWon} khung trúng). Khuyến nghị ưu tiên dồn vốn vào 2 số đuôi (Hậu Nhị)!`;
+        biasAdvice = `Dàn số đang nổ HẬU NHỊ vượt trội (${hitHauCount}/${totalWon} khung trúng). Khuyến nghị ưu tiên dồn vốn vào 2 số đuôi (Hậu Nhị)!`;
         biasClass = 'bias-hau';
     } else if (hitTienCount > hitHauCount) {
         biasType = 'tien';
         biasTitle = `THIÊN VỀ TIỀN NHỊ (${rateTien}% vs ${rateHau}%)`;
-        biasAdvice = `Dàn 25 số đang nổ TIỀN NHỊ vượt trội (${hitTienCount}/${totalWon} khung trúng). Khuyến nghị ưu tiên dồn vốn vào 2 số đầu (Tiền Nhị)!`;
+        biasAdvice = `Dàn số đang nổ TIỀN NHỊ vượt trội (${hitTienCount}/${totalWon} khung trúng). Khuyến nghị ưu tiên dồn vốn vào 2 số đầu (Tiền Nhị)!`;
         biasClass = 'bias-tien';
     } else if (totalWon > 0) {
         biasTitle = `CÂN BẰNG ĐỒNG BỘ (${rateTien}% ⇌ ${rateHau}%)`;
-        biasAdvice = `Dàn 25 số đang nổ cân bằng hoàn hảo (${hitTienCount} Tiền - ${hitHauCount} Hậu). Khuyến nghị vào đều vốn cả Tiền & Hậu!`;
+        biasAdvice = `Dàn số đang nổ cân bằng hoàn hảo (${hitTienCount} Tiền - ${hitHauCount} Hậu). Khuyến nghị vào đều vốn cả Tiền & Hậu!`;
     }
 
     const stats = {
@@ -2165,6 +2650,11 @@ function updateFrameUI() {
     const betAdvice = document.getElementById('activeFrameBetAdvice');
     const chamPillsElem = document.getElementById('activeFrameChamPills');
     const danDisplay = document.getElementById('activeFrameDanDisplay');
+    const activeDanTitle = document.getElementById('activeFrameDanTitleBadge');
+    const btnCopyActMain = document.getElementById('btnCopyActiveMain');
+
+    const isMode36 = STATE.danMode === 'dan36';
+    const isModeSep = STATE.danMode === 'separate';
 
     if (active) {
         if (active.isWarmup) {
@@ -2186,7 +2676,13 @@ function updateFrameUI() {
             }
         } else {
             if (activeTitle) {
-                activeTitle.innerHTML = `<i class="fa-solid fa-crosshairs text-gold"></i> NUÔI DÀN 25 KHUNG 3 KỲ - KHUNG #${active.frameId || 1}`;
+                if (isMode36) {
+                    activeTitle.innerHTML = `<i class="fa-solid fa-gem text-gold"></i> NUÔI DÀN 36 SỐ BẤT BẠI (6 CHẠM VIP) - KHUNG #${active.frameId || 1}`;
+                } else if (isModeSep) {
+                    activeTitle.innerHTML = `<i class="fa-solid fa-arrows-split-up-and-left text-cyan"></i> NUÔI 2 DÀN 25 SỐ TIỀN & HẬU CHUYÊN BIỆT - KHUNG #${active.frameId || 1}`;
+                } else {
+                    activeTitle.innerHTML = `<i class="fa-solid fa-layer-group text-gold"></i> NUÔI DÀN 25 KHUNG 3 TAY ĐỘNG - KHUNG #${active.frameId || 1}`;
+                }
             }
 
             const tay = active.currentTay || 1;
@@ -2201,10 +2697,12 @@ function updateFrameUI() {
             const nextPeriodVal = (nextPeriodInput && nextPeriodInput.value) ? nextPeriodInput.value : `#${STATE.rounds.length + 1}`;
 
             if (originElem) {
-                if (active.startPeriod && active.startPeriod !== 'Khởi đầu') {
+                if (active.refPeriod && active.refPeriod !== 'Khởi đầu') {
+                    const tayText = tay === 1 ? 'Khởi Đầu' : (tay === 2 ? 'Gấp Thếp' : 'Quyết Đấu');
+                    const refInfo = `Kỳ ${active.refPeriod} [${(active.refDigits || []).join('')}]`;
                     originElem.innerHTML = `
-                        <span><i class="fa-solid fa-flag-checkered text-cyan"></i> Mốc Gốc: <b>Kỳ ${active.startPeriod} [${(active.startDigits || []).join('')}]</b></span>
-                        <span style="margin-left: 8px;"><i class="fa-solid fa-crosshairs text-gold"></i> Đang Đánh Cho: <b class="text-green">${nextPeriodVal} (TAY ${tay}/3)</b></span>
+                        <span><i class="fa-solid fa-flag-checkered text-cyan"></i> Mốc Soi: <b>${refInfo}</b></span>
+                        <span style="margin-left: 8px;"><i class="fa-solid fa-crosshairs text-gold"></i> Đang Đánh Cho: <b class="text-green">${nextPeriodVal} (TAY ${tay}/3 - ${tayText})</b></span>
                     `;
                 } else {
                     originElem.innerText = 'Chờ kỳ đầu tiên';
@@ -2224,9 +2722,10 @@ function updateFrameUI() {
             }
         }
 
-        if (chamPillsElem && active.cham5) {
-            chamPillsElem.innerHTML = active.cham5.map((d, idx) => {
-                const attr = getBridgeAttribution(d, active.startDigits);
+        const chamToShow = (isMode36 && active.cham6) ? active.cham6 : (active.cham5 || []);
+        if (chamPillsElem && chamToShow) {
+            chamPillsElem.innerHTML = chamToShow.map((d, idx) => {
+                const attr = getBridgeAttribution(d, active.refDigits || active.startDigits);
                 return `
                     <div class="cham-tag-pill" title="TOP ${idx + 1} - Chạm ${d}: ${attr.detail}">
                         <span class="cham-rank-badge rank-top${idx + 1}">TOP ${idx + 1}</span>
@@ -2237,8 +2736,42 @@ function updateFrameUI() {
             }).join('');
         }
 
-        if (danDisplay && active.dan25) {
-            danDisplay.innerText = active.dan25.join(', ');
+        if (activeDanTitle) {
+            if (isMode36) {
+                activeDanTitle.innerHTML = `<i class="fa-solid fa-gem text-gold"></i> <b>DÀN 36 SỐ NUÔI KHUNG ĐỘNG (6 Chạm VIP - Cập nhật theo kỳ vừa ra - Đánh Tay ${active.currentTay || 1}/3):</b>`;
+            } else if (isModeSep) {
+                activeDanTitle.innerHTML = `<i class="fa-solid fa-arrows-split-up-and-left text-cyan"></i> <b>2 DÀN 25 SỐ NUÔI KHUNG ĐỘNG CHUYÊN BIỆT (TIỀN NHỊ & HẬU NHỊ - Tay ${active.currentTay || 1}/3):</b>`;
+            } else {
+                activeDanTitle.innerHTML = `<i class="fa-solid fa-layer-group text-gold"></i> <b>DÀN 25 SỐ NUÔI KHUNG ĐỘNG (5 Chạm Lõi - Cập nhật theo kỳ vừa ra - Đánh Tay ${active.currentTay || 1}/3):</b>`;
+            }
+        }
+
+        if (danDisplay) {
+            if (isMode36) {
+                danDisplay.innerText = (active.dan36 || []).join(', ');
+            } else if (isModeSep) {
+                danDisplay.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div><span class="text-cyan" style="font-weight:700;"><i class="fa-solid fa-angles-left"></i> Tiền Nhị (25 số):</span> ${(active.danTien25 || active.dan25 || []).join(', ')}</div>
+                        <div><span class="text-purple" style="font-weight:700;"><i class="fa-solid fa-angles-right"></i> Hậu Nhị (25 số):</span> ${(active.danHau25 || active.dan25 || []).join(', ')}</div>
+                    </div>
+                `;
+            } else {
+                danDisplay.innerText = (active.dan25 || []).join(', ');
+            }
+        }
+
+        if (btnCopyActMain) {
+            if (isMode36) {
+                btnCopyActMain.innerHTML = `<i class="fa-solid fa-copy"></i> Copy 36 Số VIP (Có Kép)`;
+                btnCopyActMain.setAttribute('onclick', 'copyActiveFrameDan(36)');
+            } else if (isModeSep) {
+                btnCopyActMain.innerHTML = `<i class="fa-solid fa-copy"></i> Copy Dàn Tiền & Hậu Nuôi Khung`;
+                btnCopyActMain.setAttribute('onclick', 'copyActiveFrameDan("auto")');
+            } else {
+                btnCopyActMain.innerHTML = `<i class="fa-solid fa-copy"></i> Copy 25 Số Nuôi (Có Kép)`;
+                btnCopyActMain.setAttribute('onclick', 'copyActiveFrameDan(25)');
+            }
         }
 
         // 1.2 UPDATE FRAME SIGNAL & ENTRY ADVICE
@@ -2338,7 +2871,8 @@ function updateFrameUI() {
                     ? `<span class="frame-status-badge status-won"><i class="fa-solid fa-check"></i> HÚP TAY ${f.wonStep} ✓ (${f.winType})</span>`
                     : `<span class="frame-status-badge status-lost"><i class="fa-solid fa-xmark"></i> GÃY KHUNG ✗</span>`;
 
-                const chamPills = f.cham5.map((d, idx) => `
+                const chams = (f.cham6 && f.cham6.length >= 6) ? f.cham6 : (f.cham5 || []);
+                const chamPills = chams.map((d, idx) => `
                     <span class="cham-tag-pill" style="padding:3px 6px; font-size:0.75rem;">
                         <span class="cham-rank-badge rank-top${idx + 1}" style="font-size:0.55rem; padding:0 3px; margin-bottom:1px;">T${idx + 1}</span>
                         <span class="cham-num" style="font-size:0.9rem;">C.${d}</span>
@@ -2368,7 +2902,7 @@ function updateFrameUI() {
                             ${statusBadge}
                         </div>
                         <div class="frame-cham-row" style="margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                            <span style="font-size:0.82rem; color:var(--text-dim);">5 Chạm:</span>
+                            <span style="font-size:0.82rem; color:var(--text-dim);">Chạm VIP:</span>
                             <div class="cham-pills-display" style="gap:4px;">
                                 ${chamPills}
                             </div>
@@ -2385,32 +2919,56 @@ function updateFrameUI() {
 }
 
 /**
- * Fast clipboard copy for active frame 25/20 numbers
+ * Fast clipboard copy for active frame numbers (36 / 25 / Tiền / Hậu - Bao Trọn Kép)
  */
-function copyActiveFrameDan(count = 25) {
+function copyActiveFrameDan(count = 'auto') {
     const frameData = computeFrameHistory(STATE.rounds);
     const active = frameData.activeFrame;
     if (!active) return;
 
-    let numbers = active.dan25;
-    let label = '25 số VIP bao trọn kép';
-    if (count === 20) {
-        numbers = active.dan20 || generatePhucHop20(active.cham5);
-        label = '20 số VIP bỏ kép';
+    let numbers = [];
+    let label = '';
+
+    if (count === 'tien25') {
+        numbers = active.danTien25 || active.dan25 || generatePhucHop25(active.cham5);
+        label = '25 số Tiền Nhị Chuyên Biệt (Đầu d1 d2)';
+    } else if (count === 'hau25') {
+        numbers = active.danHau25 || active.dan25 || generatePhucHop25(active.cham5);
+        label = '25 số Hậu Nhị Chuyên Biệt (Đuôi d4 d5)';
+    } else if (count === 36 || (count === 'auto' && STATE.danMode === 'dan36')) {
+        numbers = active.dan36 || generatePhucHop36(active.cham6);
+        label = '36 số VIP Bất Bại (6 Chạm bao trọn kép)';
+    } else if (count === 'auto' && STATE.danMode === 'separate') {
+        const tien = (active.danTien25 || active.dan25 || []).join(', ');
+        const hau = (active.danHau25 || active.dan25 || []).join(', ');
+        const textSep = `[TIỀN NHỊ 25 SỐ]: ${tien}\n\n[HẬU NHỊ 25 SỐ]: ${hau}`;
+        const alertMsg = `ĐÃ SAO CHÉP 2 DÀN TIỀN NHỊ & HẬU NHỊ NUÔI KHUNG - TAY ${active.currentTay || 1}/3!\n\n` + textSep;
+        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(textSep).then(() => {
+                alert(alertMsg);
+            }).catch(() => {
+                fallbackCopy(textSep, alertMsg);
+            });
+        } else {
+            fallbackCopy(textSep, alertMsg);
+        }
+        return;
+    } else {
+        numbers = active.dan25 || generatePhucHop25(active.cham5);
+        label = '25 số VIP Nuôi Khung (5 Chạm bao trọn kép)';
     }
 
     const text = numbers.join(', ');
-    navigator.clipboard.writeText(text).then(() => {
-        alert(`ĐÃ SAO CHÉP DÀN NUÔI KHUNG (${label.toUpperCase()}) - TAY ${active.currentTay}/3!\n\nDàn số (${numbers.length} số): ` + text);
-    }).catch(() => {
-        const temp = document.createElement('textarea');
-        temp.value = text;
-        document.body.appendChild(temp);
-        temp.select();
-        document.execCommand('copy');
-        document.body.removeChild(temp);
-        alert(`ĐÃ SAO CHÉP DÀN NUÔI KHUNG (${label.toUpperCase()}) - TAY ${active.currentTay}/3!\n\nDàn số (${numbers.length} số): ` + text);
-    });
+    const alertMsg = `ĐÃ SAO CHÉP DÀN NUÔI KHUNG (${label.toUpperCase()}) - TAY ${active.currentTay || 1}/3!\n\nDàn số (${numbers.length} số): ` + text;
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert(alertMsg);
+        }).catch(() => {
+            fallbackCopy(text, alertMsg);
+        });
+    } else {
+        fallbackCopy(text, alertMsg);
+    }
 }
 
 /**
@@ -3169,6 +3727,7 @@ function saveToLocalStorage() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
             rounds: STATE.rounds,
             calcMode: STATE.calcMode,
+            danMode: STATE.danMode,
             capital: STATE.capital,
             safeFrames: STATE.safeFrames,
             betStrategy: STATE.betStrategy,
@@ -3186,9 +3745,10 @@ function loadFromLocalStorage() {
             const parsed = JSON.parse(saved);
             STATE.rounds = parsed.rounds || [];
             STATE.calcMode = parsed.calcMode || 'sum5';
+            STATE.danMode = parsed.danMode || 'dan36';
             if (parsed.capital !== undefined) STATE.capital = Number(parsed.capital) || 30000000;
             if (parsed.safeFrames !== undefined) STATE.safeFrames = Number(parsed.safeFrames) || 5;
-            // Luôn ưu tiên mặc định 'dual' (Cả 2 đầu: 50 số Tiền Nhị & Hậu Nhị)
+            // Luôn ưu tiên mặc định 'dual' (Cả 2 đầu: Tiền Nhị & Hậu Nhị)
             STATE.betStrategy = (parsed.betStrategy && parsed.betStrategy === 'single') ? 'dual' : (parsed.betStrategy || 'dual');
             if (parsed.payoutRate !== undefined) STATE.payoutRate = Number(parsed.payoutRate) || 99;
 
