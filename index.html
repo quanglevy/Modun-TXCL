@@ -414,43 +414,6 @@
                                         <span class="golden-rule-item" title="Đơn vị x2 trừ 1 & cộng 1"><i class="fa-solid fa-arrows-left-right text-gold"></i> Biên (±1): <b id="unitBoundsVal" class="text-white">--</b></span>
                                     </div>
 
-                                    <!-- KHỐI DÀN SỐ CHUNG (DÀN 36 HOẶC DÀN 25) -->
-                                    <div class="phuc-hop-box" id="singleDanBox">
-                                        <div class="phuc-hop-header">
-                                            <span class="phuc-hop-title-badge" id="phucHopTitleBadge">
-                                                <i class="fa-solid fa-gem text-gold"></i> 
-                                                <b>DÀN 36 SỐ GHÉP 6 CHẠM VIP (Bất Bại - Bao Trọn Kép - Đánh Tiền & Hậu Nhị):</b>
-                                            </span>
-                                            <div class="phuc-hop-actions">
-                                                <button type="button" class="btn-copy-phuchop btn-copy-master-main" id="btnCopyMainPhucHop" onclick="copyUnifiedPhucHop()" title="Sao chép dàn số VIP bao trọn kép">
-                                                    <i class="fa-solid fa-copy"></i> Copy Dàn Số VIP (Có Kép)
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="phuc-hop-list list-unified-vip" id="phucHopMasterListDisplay">Đang tính toán dàn số VIP...</div>
-                                    </div>
-
-                                    <!-- TÁCH RIÊNG 2 DÀN 25 SỐ TIỀN NHỊ & HẬU NHỊ (Khi chọn tab Tách Riêng) -->
-                                    <div class="separate-nhi-grid" id="separateNhiGrid" style="display: none;">
-                                        <div class="sub-nhi-card card-sub-tien">
-                                            <div class="sub-nhi-header">
-                                                <span class="sub-nhi-title text-cyan"><i class="fa-solid fa-angles-left"></i> <b>TIỀN NHỊ (2 Số Đầu d1 d2)</b></span>
-                                                <div class="sub-nhi-actions">
-                                                    <button type="button" class="btn-copy-phuchop btn-copy-mini" onclick="copyUnifiedPhucHop('tien25')"><i class="fa-solid fa-copy"></i> Copy 25 Số Tiền (Có Kép)</button>
-                                                </div>
-                                            </div>
-                                            <div class="phuc-hop-list list-sub-nhi" id="phucHopTienListDisplay">--</div>
-                                        </div>
-                                        <div class="sub-nhi-card card-sub-hau">
-                                            <div class="sub-nhi-header">
-                                                <span class="sub-nhi-title text-purple"><i class="fa-solid fa-angles-right"></i> <b>HẬU NHỊ (2 Số Đuôi d4 d5)</b></span>
-                                                <div class="sub-nhi-actions">
-                                                    <button type="button" class="btn-copy-phuchop btn-copy-mini" onclick="copyUnifiedPhucHop('hau25')"><i class="fa-solid fa-copy"></i> Copy 25 Số Hậu (Có Kép)</button>
-                                                </div>
-                                            </div>
-                                            <div class="phuc-hop-list list-sub-nhi" id="phucHopHauListDisplay">--</div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -526,43 +489,6 @@
                             </div>
                         </div>
 
-                        <!-- KHỐI DÀN SỐ CHUNG CHO KHUNG (DÀN 36 HOẶC DÀN 25) -->
-                        <div class="phuc-hop-box frame-dan25-box" id="activeSingleDanBox">
-                            <div class="phuc-hop-header">
-                                <span class="phuc-hop-title-badge" id="activeFrameDanTitleBadge">
-                                    <i class="fa-solid fa-gem text-gold"></i> 
-                                    <b>DÀN 36 SỐ NUÔI KHUNG CỐ ĐỊNH 3 KỲ (6 Chạm VIP - Đánh Tiền & Hậu Nhị - Trúng là Dừng Mở Khung Mới):</b>
-                                </span>
-                                <div class="phuc-hop-actions">
-                                    <button type="button" class="btn-copy-phuchop btn-copy-master-main" id="btnCopyActiveMain" onclick="copyActiveFrameDan()" title="Sao chép dàn số nuôi khung (bao trọn kép)">
-                                        <i class="fa-solid fa-copy"></i> Copy Dàn Nuôi Khung (Có Kép)
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="phuc-hop-list list-unified-vip" id="activeFrameDanDisplay">Đang tải dàn số nuôi khung...</div>
-                        </div>
-
-                        <!-- KHỐI TÁCH RIÊNG 2 DÀN 25 SỐ NUÔI KHUNG (Khi chọn tab Tách Riêng) -->
-                        <div class="separate-nhi-grid" id="activeSeparateNhiGrid" style="display: none; margin-top: 10px;">
-                            <div class="sub-nhi-card card-sub-tien">
-                                <div class="sub-nhi-header">
-                                    <span class="sub-nhi-title text-cyan"><i class="fa-solid fa-angles-left"></i> <b>TIỀN NHỊ NUÔI KHUNG (25 Số Đầu)</b></span>
-                                    <div class="sub-nhi-actions">
-                                        <button type="button" class="btn-copy-phuchop btn-copy-mini" onclick="copyActiveFrameDan('tien25')"><i class="fa-solid fa-copy"></i> Copy Tiền 25</button>
-                                    </div>
-                                </div>
-                                <div class="phuc-hop-list list-sub-nhi" id="activeFrameDanTienDisplay">--</div>
-                            </div>
-                            <div class="sub-nhi-card card-sub-hau">
-                                <div class="sub-nhi-header">
-                                    <span class="sub-nhi-title text-purple"><i class="fa-solid fa-angles-right"></i> <b>HẬU NHỊ NUÔI KHUNG (25 Số Đuôi)</b></span>
-                                    <div class="sub-nhi-actions">
-                                        <button type="button" class="btn-copy-phuchop btn-copy-mini" onclick="copyActiveFrameDan('hau25')"><i class="fa-solid fa-copy"></i> Copy Hậu 25</button>
-                                    </div>
-                                </div>
-                                <div class="phuc-hop-list list-sub-nhi" id="activeFrameDanHauDisplay">--</div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -586,12 +512,6 @@
 
                     <form id="resultForm" onsubmit="handleFormSubmit(event)">
                         <div class="single-input-row">
-                            <!-- Kỳ quay -->
-                            <div class="form-group period-compact-group">
-                                <label for="periodInput"><i class="fa-solid fa-hashtag"></i> Kỳ quay</label>
-                                <input type="text" id="periodInput" placeholder="101" required>
-                            </div>
-
                             <!-- Ô nhập 5 số liền nhau -->
                             <div class="form-group digit5-group">
                                 <div class="digit5-label-row">
@@ -699,15 +619,38 @@
                             </div>
                         </div>
 
-                        <!-- Thanh so sánh tỷ lệ Tiền vs Hậu -->
-                        <div class="nhi-comparison-bar-wrap">
-                            <div class="nhi-bar-labels">
-                                <span class="text-cyan"><i class="fa-solid fa-angles-left"></i> Tiền Nhị (d1 d2)</span>
-                                <span class="text-purple">Hậu Nhị (d4 d5) <i class="fa-solid fa-angles-right"></i></span>
+                        <!-- Thống kê so sánh tỷ lệ Tiền vs Hậu: Dàn 25 Số & Dàn 36 Số -->
+                        <div class="nhi-comparison-container">
+                            <!-- DÒNG 1: DÀN 25 SỐ -->
+                            <div class="nhi-comparison-bar-wrap">
+                                <div class="nhi-bar-header">
+                                    <span class="nhi-bar-title"><i class="fa-solid fa-layer-group text-yellow"></i> <b>DÀN 25 SỐ</b> (5 Chạm Lõi)</span>
+                                    <span class="nhi-bar-counts" id="fStatRatioText25">Tiền: 0 | Hậu: 0</span>
+                                </div>
+                                <div class="nhi-bar-labels">
+                                    <span class="text-cyan"><i class="fa-solid fa-angles-left"></i> Tiền Nhị (d1 d2)</span>
+                                    <span class="text-purple">Hậu Nhị (d4 d5) <i class="fa-solid fa-angles-right"></i></span>
+                                </div>
+                                <div class="nhi-dual-progress-bar">
+                                    <div class="bar-tien" id="fStatRatioBarTien25" style="width: 50%;">Tiền 50%</div>
+                                    <div class="bar-hau" id="fStatRatioBarHau25" style="width: 50%;">Hậu 50%</div>
+                                </div>
                             </div>
-                            <div class="nhi-dual-progress-bar">
-                                <div class="bar-tien" id="fStatRatioBarTien" style="width: 50%;">Tiền 50%</div>
-                                <div class="bar-hau" id="fStatRatioBarHau" style="width: 50%;">Hậu 50%</div>
+
+                            <!-- DÒNG 2: DÀN 36 SỐ -->
+                            <div class="nhi-comparison-bar-wrap">
+                                <div class="nhi-bar-header">
+                                    <span class="nhi-bar-title"><i class="fa-solid fa-crown text-gold"></i> <b>DÀN 36 SỐ VIP</b> (6 Chạm Master 2+2+2)</span>
+                                    <span class="nhi-bar-counts" id="fStatRatioText36">Tiền: 0 | Hậu: 0</span>
+                                </div>
+                                <div class="nhi-bar-labels">
+                                    <span class="text-cyan"><i class="fa-solid fa-angles-left"></i> Tiền Nhị (d1 d2)</span>
+                                    <span class="text-purple">Hậu Nhị (d4 d5) <i class="fa-solid fa-angles-right"></i></span>
+                                </div>
+                                <div class="nhi-dual-progress-bar">
+                                    <div class="bar-tien" id="fStatRatioBarTien36" style="width: 50%;">Tiền 50%</div>
+                                    <div class="bar-hau" id="fStatRatioBarHau36" style="width: 50%;">Hậu 50%</div>
+                                </div>
                             </div>
                         </div>
 

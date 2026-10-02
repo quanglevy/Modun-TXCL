@@ -2697,16 +2697,48 @@ body {
     margin-top: 2px;
 }
 
+.nhi-comparison-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
 .nhi-comparison-bar-wrap {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
+.nhi-bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.76rem;
+    margin-bottom: 2px;
+}
+
+.nhi-bar-title {
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+}
+
+.nhi-bar-counts {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
 .nhi-bar-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 700;
 }
 
