@@ -2522,9 +2522,15 @@ body {
 
 .frame-stats-summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
     margin-bottom: 14px;
+}
+
+@media (max-width: 900px) {
+    .frame-stats-summary-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 @media (max-width: 640px) {
@@ -2537,13 +2543,18 @@ body {
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
-    padding: 10px 8px;
+    padding: 10px 6px;
     text-align: center;
 }
 
 .frame-stat-box.box-winrate {
     border-color: rgba(16, 185, 129, 0.4);
     background: rgba(16, 185, 129, 0.08);
+}
+
+.frame-stat-box.box-lost {
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.08);
 }
 
 .frame-stat-box .f-label {

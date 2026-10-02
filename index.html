@@ -384,6 +384,26 @@
                                         </div>
                                     </div>
 
+                                    <!-- MINI 10-KỲ TRACKER CHO DÀN 36 SỐ VIP -->
+                                    <div class="pred-10round-mini" id="predDan36Mini10" style="margin: 6px 0; background: rgba(0,0,0,0.5); border: 1px solid rgba(245,158,11,0.25);">
+                                        <div class="mini-10-header">
+                                            <span><i class="fa-solid fa-gem text-gold"></i> Hiệu Suất 10 Kỳ (Dàn 36 Số): <b id="dan36MiniHupRatio" class="text-green">0/0 Húp</b></span>
+                                            <span class="mini-10-rate text-gold" id="dan36MiniWinRate">0%</span>
+                                        </div>
+                                        <div class="mini-10-dots" id="dan36MiniDots">
+                                            <div class="mini-dot dot-empty">-</div>
+                                            <div class="mini-dot dot-empty">-</div>
+                                            <div class="mini-dot dot-empty">-</div>
+                                            <div class="mini-dot dot-empty">-</div>
+                                            <div class="mini-dot dot-empty">-</div>
+                                            <div class="mini-dot dot-empty">-</div>
+                                            <div class="mini-dot dot-empty">-</div>
+                                            <div class="mini-dot dot-empty">-</div>
+                                            <div class="mini-dot dot-empty">-</div>
+                                            <div class="mini-dot dot-empty">-</div>
+                                        </div>
+                                    </div>
+
                                     <!-- 6 CẦU VÀNG BẮT CHẠM CAO THỦ + KHÓA TRỤC TÂM (d3) BREAKDOWN -->
                                     <div class="golden-rules-breakdown" id="goldenRulesBreakdown">
                                         <span class="golden-rule-item" title="Cầu Tổng Đầu (Chục Ngàn + Ngàn d1+d2) chính nó & bóng dương"><i class="fa-solid fa-angles-left text-cyan"></i> Tổng Đầu (d1+d2): <b id="sumDauVal" class="text-cyan">--</b></span>
@@ -642,6 +662,11 @@
                             <div class="f-val text-purple" id="fStatStep3">0%</div>
                             <div class="f-sub" id="fStatStep3Ratio">0 Khung</div>
                         </div>
+                        <div class="frame-stat-box box-lost">
+                            <div class="f-label"><i class="fa-solid fa-circle-xmark text-red"></i> Trượt Khung</div>
+                            <div class="f-val text-red" id="fStatLostRate">0%</div>
+                            <div class="f-sub" id="fStatLostRatio">0 Khung</div>
+                        </div>
                     </div>
 
                     <!-- KHỐI THỐNG KÊ TIỀN NHỊ VS HẬU NHỊ & THIÊN HƯỚNG CẦU -->
@@ -699,10 +724,10 @@
                     </div>
                 </div>
 
-                <!-- THẺ HIỆU SUẤT ĐỐI SOÁT 10 KỲ (TÀI XỈU & CHẴN LẺ) -->
+                <!-- THẺ HIỆU SUẤT ĐỐI SOÁT 10 KỲ (TÀI XỈU, CHẴN LẺ & DÀN 36 SỐ) -->
                 <div class="card card-stats glow-border">
                     <div class="card-header">
-                        <h3><i class="fa-solid fa-chart-pie text-cyan"></i> HIỆU SUẤT ĐỐI SOÁT 10 KỲ (TÀI XỈU & CHẴN LẺ)</h3>
+                        <h3><i class="fa-solid fa-chart-pie text-cyan"></i> HIỆU SUẤT ĐỐI SOÁT 10 KỲ (TÀI XỈU, CHẴN LẺ & DÀN 36 SỐ)</h3>
                         <span class="period-count-badge" id="totalRoundsBadge">0 Kỳ</span>
                     </div>
 
@@ -754,9 +779,35 @@
                         </div>
                     </div>
 
+                    <!-- DÒNG 3: THỐNG KÊ DÀN 36 SỐ BẤT BẠI (10 KỲ GẦN NHẤT) -->
+                    <div class="stat-row-block" style="border-left: 4px solid #f59e0b; background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(0, 0, 0, 0.45) 100%);">
+                        <div class="stat-row-header">
+                            <div class="stat-row-title"><i class="fa-solid fa-gem text-gold"></i> <b>THỐNG KÊ DÀN 36 SỐ BẤT BẠI (10 KỲ GẦN NHẤT)</b></div>
+                            <div class="stat-row-metrics">
+                                <span class="metric-pill pill-hup"><i class="fa-solid fa-circle-check"></i> Húp: <b id="dan36HupCount">0</b></span>
+                                <span class="metric-pill pill-gay"><i class="fa-solid fa-circle-xmark"></i> Gãy: <b id="dan36GayCount">0</b></span>
+                                <span class="metric-pill pill-rate" style="color:#fbbf24; border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.15);"><i class="fa-solid fa-percent"></i> Tỷ lệ: <b id="dan36WinRate">0%</b></span>
+                                <span class="metric-pill" style="color:#38bdf8; border-color:rgba(56,189,248,0.3); background:rgba(56,189,248,0.1);"><i class="fa-solid fa-crown text-gold"></i> Ăn Cả 2 Đầu: <b id="dan36BothCount">0</b></span>
+                            </div>
+                        </div>
+                        <div class="tracker-badges-grid" id="last10BadgesDan36">
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                            <div class="empty-badge-slot">-</div>
+                        </div>
+                    </div>
+
                     <div class="streak-info">
                         <span><i class="fa-solid fa-fire text-red"></i> Nhịp TX: <b id="txStreakStatus" class="text-green">--</b></span>
                         <span><i class="fa-solid fa-bolt text-purple"></i> Nhịp CL: <b id="clStreakStatus" class="text-green">--</b></span>
+                        <span><i class="fa-solid fa-gem text-gold"></i> Nhịp Dàn 36: <b id="dan36StreakStatus" class="text-green">--</b></span>
                     </div>
                 </div>
             </div>

@@ -77,14 +77,17 @@ Hệ thống bắt Chạm VIP và Dàn số từ kết quả kỳ quay trước 
   - Tách thành 4 dòng/mục riêng biệt rõ ràng: (1) Cầu Tài/Xỉu, (2) Cầu Chẵn/Lẻ kèm giải mã vị trí, (3) 6 Cầu Vàng Bắt Chạm VIP & Dàn Nuôi Khung, (4) Bộ đánh giá độ mạnh cầu & kiến nghị vào vốn AI.
   - Mỗi mục có huy hiệu định danh riêng, viền màu phân biệt (Đỏ, Tím, Vàng, Xanh Lá).
 - **Thẻ Thống Kê Các Khung Đã Nuôi (`card-frame-history`):**
-  - Hiển thị tổng số khung đã hoàn tất, % ăn khung, % ăn Tay 1, 2, 3 và % gãy.
+  - Hiển thị 5 Thẻ Thống Kê Tổng Quan: **% Ăn Khung (Húp)**, **% Ăn Tay 1**, **% Ăn Tay 2**, **% Ăn Tay 3**, và **% Trượt Khung (Gãy)** kèm số lượng khung cụ thể.
   - **Khối Đối Soát Tiền Nhị vs Hậu Nhị (`frame-nhi-analysis-box`):**
     - 3 Thẻ Mini: Ăn Tiền Nhị (2 Đầu d1 d2), Ăn Hậu Nhị (2 Đuôi d4 d5), Trúng Cả 2 Đầu kèm số khung và % tỷ lệ trúng.
     - Thanh so sánh tỷ lệ kép trực quan (Dual Progress Bar: Tiền % vs Hậu %).
     - Huy hiệu nhận định xu hướng & Lời khuyên phân bổ vốn: Nhận biết tự động dòng cầu đang **THIÊN VỀ HẬU NHỊ**, **THIÊN VỀ TIỀN NHỊ** hay **CÂN BẰNG 2 ĐẦU**.
   - Danh sách từng khung đã qua dạng Grid ngang: Tay 1, Tay 2, Tay 3 hiển thị đồng thời, không bị che khuất trên mobile.
 - **Khối Hiển Thị Nhanh Kỳ Trước Vừa Ra (`last-round-quick-banner` & `last-round-mini-inline`):**
-  - Tích hợp ngay trong Thẻ Nhập Kết Quả (`card-input`), hiển thị tức thì kỳ vừa nhập: Số Kỳ, 5 Viên Bi Số phát sáng, Tổng điểm, Kết quả Tài/Xỉu/Chẵn/Lẻ, Tiền Nhị/Hậu Nhị và Trạng thái Húp/Gãy.
+  - Tích hợp ngay trong Thẻ Nhập Kết Quả (`card-input`), hiển thị tức thì kỳ vừa nhập: Số Kỳ, 5 Viên Bi Số phát sáng, Tổng điểm, Kết quả Tài/Xỉu/Chẵn/Lẻ, Tiền Nhị/Hậu Nhị và **Trạng thái Trúng/Trượt của Dàn 36 Số VIP (`Dàn 36 ✓` / `Dàn 36 ✗`) kèm chi tiết nổ Tiền / Hậu / Cả 2 Đầu**.
+- **Thẻ Hiệu Suất Đối Soát 10 Kỳ (`card-stats`):**
+  - Bổ sung **DÒNG 3: THỐNG KÊ DÀN 36 SỐ BẤT BẠI (10 KỲ)** gồm: Số kỳ Húp, Số kỳ Gãy, % Tỷ lệ ăn dàn 36 số, Số kỳ ăn kép cả 2 đầu, 10 Huy hiệu Tracker trạng thái Húp/Gãy từng kỳ và Nhịp nổ thông của Dàn 36 số.
+  - **Mini 10-Kỳ Tracker Dàn 36:** Tích hợp trực tiếp bên trong Thẻ Bắt Chạm (`#predChamBox`) hiển thị 10 viên bi trực quan (Xanh Húp / Đỏ Gãy).
 - **Khối Tư Vấn & Kiến Nghị Hành Động AI Tài Xỉu / Chẵn Lẻ (`pred-action-advice`):**
   - Tích hợp trực tiếp bên trong 2 Thẻ Dự Đoán **Tài / Xỉu (`#predTxBox`)** và **Chẵn / Lẻ (`#predClBox`)**.
   - Hiển thị huy hiệu hành động (ĐÈN XANH / ĐÈN VÀNG / ĐÈN ĐỎ / MỐC GỐC), phân loại nhịp cầu đang bắt và lời khuyên hành động cụ thể.

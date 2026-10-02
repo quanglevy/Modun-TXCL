@@ -1245,15 +1245,25 @@ function generateAIPrediction(history) {
             const attr = getBridgeAttribution(d, refD);
             return { digit: d, prob: [99, 95, 90, 84, 78][idx] || 70, bridgeTag: attr.tag, bridgeDetail: attr.detail };
         });
+        const topTien = (active.tienDigits || active.cham5 || []).map((d, idx) => {
+            const attr = getBridgeAttribution(d, refD);
+            return { digit: d, prob: [99, 95, 90, 84, 78][idx] || 70, bridgeTag: attr.tag, bridgeDetail: attr.detail };
+        });
+        const topHau = (active.hauDigits || active.cham5 || []).map((d, idx) => {
+            const attr = getBridgeAttribution(d, refD);
+            return { digit: d, prob: [99, 95, 90, 84, 78][idx] || 70, bridgeTag: attr.tag, bridgeDetail: attr.detail };
+        });
         chamAnalysis = {
             top6: t6,
             top5: t5,
+            topTien: topTien,
+            topHau: topHau,
             topMaster: t6,
             masterDigits6: active.cham6,
             masterDigits5: active.cham5,
             masterDigits: active.cham6,
-            tienDigits: active.cham5 || active.cham6.slice(0, 5),
-            hauDigits: active.cham5 || active.cham6.slice(0, 5),
+            tienDigits: active.tienDigits || active.cham5 || active.cham6.slice(0, 5),
+            hauDigits: active.hauDigits || active.cham5 || active.cham6.slice(0, 5),
             goldenPair: active.goldenPair || [7, 2],
             unitDouble: active.unitDouble || [2, 7],
             lockCenterPair: active.lockCenterPair || [0, 5],
@@ -1459,24 +1469,40 @@ function addNewRound(period, digits) {
     const tienNhiVal = `${digits[0]}${digits[1]}`;
     const hauNhiVal = `${digits[3]}${digits[4]}`;
     
+    // Tính toán trúng/trượt cho Dàn 36 số VIP Bất Bại
+    const isTien36Hit = dan36.includes(tienNhiVal);
+    const isHau36Hit = dan36.includes(hauNhiVal);
+    const isDan36Hit = isTien36Hit || isHau36Hit;
+    const statusDan36 = isWarmup ? 'Mốc Gốc' : (isDan36Hit ? 'Húp' : 'Gãy');
+
+    // Tính toán trúng/trượt cho Dàn 25 số
+    const isTien25Hit = dan25.includes(tienNhiVal);
+    const isHau25Hit = dan25.includes(hauNhiVal);
+    const isDan25Hit = isTien25Hit || isHau25Hit;
+    const statusDan25 = isWarmup ? 'Mốc Gốc' : (isDan25Hit ? 'Húp' : 'Gãy');
+
+    // Tính toán trúng/trượt cho Tách Riêng 2 Dàn Tiền & Hậu
+    const isTienSepHit = danTien25.includes(tienNhiVal);
+    const isHauSepHit = danHau25.includes(hauNhiVal);
+    const isDanSepHit = isTienSepHit || isHauSepHit;
+
     let isTienNhiHit = false;
     let isHauNhiHit = false;
-
     if (STATE.danMode === 'dan36') {
-        isTienNhiHit = dan36.includes(tienNhiVal);
-        isHauNhiHit = dan36.includes(hauNhiVal);
+        isTienNhiHit = isTien36Hit;
+        isHauNhiHit = isHau36Hit;
     } else if (STATE.danMode === 'separate') {
-        isTienNhiHit = danTien25.includes(tienNhiVal);
-        isHauNhiHit = danHau25.includes(hauNhiVal);
+        isTienNhiHit = isTienSepHit;
+        isHauNhiHit = isHauSepHit;
     } else {
-        isTienNhiHit = dan25.includes(tienNhiVal);
-        isHauNhiHit = dan25.includes(hauNhiVal);
+        isTienNhiHit = isTien25Hit;
+        isHauNhiHit = isHau25Hit;
     }
     const isUnifiedHit = isTienNhiHit || isHauNhiHit;
 
     // Sound effect only after 5 warmup rounds
     if (!isWarmup) {
-        playNotificationSound(isTxHup || isClHup || isChamHit || isUnifiedHit);
+        playNotificationSound(isTxHup || isClHup || isChamHit || isDan36Hit || isUnifiedHit);
     }
 
     const roundData = {
@@ -1505,10 +1531,22 @@ function addNewRound(period, digits) {
         hitCham: hitCham,
         isChamHit: isChamHit,
         tienNhiVal: tienNhiVal,
-        isTienNhiHit: isTienNhiHit,
         hauNhiVal: hauNhiVal,
+        isDan36Hit: isDan36Hit,
+        isTien36Hit: isTien36Hit,
+        isHau36Hit: isHau36Hit,
+        statusDan36: statusDan36,
+        isDan25Hit: isDan25Hit,
+        isTien25Hit: isTien25Hit,
+        isHau25Hit: isHau25Hit,
+        statusDan25: statusDan25,
+        isDanSepHit: isDanSepHit,
+        isTienSepHit: isTienSepHit,
+        isHauSepHit: isHauSepHit,
+        isTienNhiHit: isTienNhiHit,
         isHauNhiHit: isHauNhiHit,
-        isUnified25Hit: isUnifiedHit,
+        isUnified36Hit: isDan36Hit,
+        isUnified25Hit: isDan25Hit,
         isUnifiedHit: isUnifiedHit,
         isWarmup: isWarmup,
         warmupNum: isWarmup ? warmupNum : null,
@@ -1987,11 +2025,79 @@ function updateLastRoundDisplay() {
     } else {
         const isTxHup = last.statusTx === 'Húp';
         const isClHup = last.statusCl === 'Húp';
-        const isDanHup = last.isUnified25Hit;
+        
+        // 1. TX Status Badge (Màu xanh khi Húp: Húp Xỉu (X ✓) hoặc Húp Tài (T ✓), màu đỏ khi Gãy)
+        const txShort = last.actualTx === 'Tài' ? 'T' : 'X';
+        const txBadge = isTxHup
+            ? `<span class="status-pill-hup" style="font-size:0.75rem; padding:3px 9px; font-weight:800;" title="Dự đoán đúng ${last.actualTx}"><i class="fa-solid fa-circle-check"></i> Húp ${last.actualTx} (${txShort} ✓)</span>`
+            : `<span class="status-pill-gay" style="font-size:0.75rem; padding:3px 9px; font-weight:800;" title="Dự đoán ${last.predTx} nhưng kết quả ra ${last.actualTx}"><i class="fa-solid fa-circle-xmark"></i> Gãy TX ✗ (Đoán ${last.predTx})</span>`;
+
+        // 2. CL Status Badge (Màu xanh khi Húp: Húp Chẵn (C ✓) hoặc Húp Lẻ (L ✓), màu đỏ khi Gãy)
+        const clShort = last.actualCl === 'Chẵn' ? 'C' : 'L';
+        const clBadge = isClHup
+            ? `<span class="status-pill-hup" style="font-size:0.75rem; padding:3px 9px; font-weight:800;" title="Dự đoán đúng ${last.actualCl}"><i class="fa-solid fa-circle-check"></i> Húp ${last.actualCl} (${clShort} ✓)</span>`
+            : `<span class="status-pill-gay" style="font-size:0.75rem; padding:3px 9px; font-weight:800;" title="Dự đoán ${last.predCl} nhưng kết quả ra ${last.actualCl}"><i class="fa-solid fa-circle-xmark"></i> Gãy CL ✗ (Đoán ${last.predCl})</span>`;
+
+        // 3. Dàn 36 Số VIP Bất Bại (Báo rõ Húp Hậu, Tiền hay Kép 2 Đầu kèm số con trúng)
+        const hitTien36 = (last.phucHop36 || []).includes(tienVal) || last.isTien36Hit;
+        const hitHau36 = (last.phucHop36 || []).includes(hauVal) || last.isHau36Hit;
+        const isDan36Hit = hitTien36 || hitHau36;
+
+        let dan36Badge = '';
+        if (hitTien36 && hitHau36) {
+            dan36Badge = `<span class="status-pill-trung" style="font-size:0.75rem; padding:3px 9px; font-weight:800; border: 1.5px solid #f59e0b;" title="Dàn 36 Số VIP trúng kép cả 2 đầu!"><i class="fa-solid fa-crown text-gold"></i> Dàn 36 ✓ Húp Kép (Tiền ${tienVal} + Hậu ${hauVal})</span>`;
+        } else if (hitHau36) {
+            dan36Badge = `<span class="status-pill-trung" style="font-size:0.75rem; padding:3px 9px; font-weight:800;" title="Dàn 36 Số VIP trúng Hậu Nhị con ${hauVal}"><i class="fa-solid fa-check"></i> Dàn 36 ✓ Húp Hậu (${hauVal})</span>`;
+        } else if (hitTien36) {
+            dan36Badge = `<span class="status-pill-trung" style="font-size:0.75rem; padding:3px 9px; font-weight:800;" title="Dàn 36 Số VIP trúng Tiền Nhị con ${tienVal}"><i class="fa-solid fa-check"></i> Dàn 36 ✓ Húp Tiền (${tienVal})</span>`;
+        } else {
+            dan36Badge = `<span class="status-pill-truot" style="font-size:0.75rem; padding:3px 9px; font-weight:800;" title="Dàn 36 Số VIP không trúng đầu nào"><i class="fa-solid fa-xmark"></i> Dàn 36 ✗ Gãy</span>`;
+        }
+
+        // 4. Dàn 25 Số hoặc Tách Tiền & Hậu
+        let secondaryDanBadge = '';
+        if (STATE.danMode === 'dan25') {
+            const hitTien25 = (last.phucHop25 || []).includes(tienVal) || last.isTien25Hit;
+            const hitHau25 = (last.phucHop25 || []).includes(hauVal) || last.isHau25Hit;
+            if (hitTien25 && hitHau25) {
+                secondaryDanBadge = `<span class="status-pill-trung" style="font-size:0.75rem; padding:3px 9px; font-weight:800;"><i class="fa-solid fa-crown text-gold"></i> Dàn 25 ✓ Húp Kép (Tiền ${tienVal} + Hậu ${hauVal})</span>`;
+            } else if (hitHau25) {
+                secondaryDanBadge = `<span class="status-pill-trung" style="font-size:0.75rem; padding:3px 9px; font-weight:800;"><i class="fa-solid fa-check"></i> Dàn 25 ✓ Húp Hậu (${hauVal})</span>`;
+            } else if (hitTien25) {
+                secondaryDanBadge = `<span class="status-pill-trung" style="font-size:0.75rem; padding:3px 9px; font-weight:800;"><i class="fa-solid fa-check"></i> Dàn 25 ✓ Húp Tiền (${tienVal})</span>`;
+            } else {
+                secondaryDanBadge = `<span class="status-pill-truot" style="font-size:0.75rem; padding:3px 9px; font-weight:800;"><i class="fa-solid fa-xmark"></i> Dàn 25 ✗ Gãy</span>`;
+            }
+        } else if (STATE.danMode === 'separate') {
+            const hitTienSep = (last.phucHopTien25 || []).includes(tienVal) || last.isTienSepHit;
+            const hitHauSep = (last.phucHopHau25 || []).includes(hauVal) || last.isHauSepHit;
+            const sepTienHtml = hitTienSep 
+                ? `<span class="status-pill-trung" style="font-size:0.75rem; padding:3px 9px; font-weight:800;"><i class="fa-solid fa-check"></i> Tiền 25 ✓ Húp (${tienVal})</span>`
+                : `<span class="status-pill-truot" style="font-size:0.75rem; padding:3px 9px; font-weight:800;"><i class="fa-solid fa-xmark"></i> Tiền 25 ✗ (${tienVal})</span>`;
+            const sepHauHtml = hitHauSep 
+                ? `<span class="status-pill-trung" style="font-size:0.75rem; padding:3px 9px; font-weight:800;"><i class="fa-solid fa-check"></i> Hậu 25 ✓ Húp (${hauVal})</span>`
+                : `<span class="status-pill-truot" style="font-size:0.75rem; padding:3px 9px; font-weight:800;"><i class="fa-solid fa-xmark"></i> Hậu 25 ✗ (${hauVal})</span>`;
+            secondaryDanBadge = `${sepTienHtml} ${sepHauHtml}`;
+        } else {
+            // In dan36 mode, also display Dàn 25 status as additional reference
+            const hitTien25 = (last.phucHop25 || []).includes(tienVal) || last.isTien25Hit;
+            const hitHau25 = (last.phucHop25 || []).includes(hauVal) || last.isHau25Hit;
+            if (hitTien25 && hitHau25) {
+                secondaryDanBadge = `<span class="status-pill-trung" style="font-size:0.74rem; padding:3px 8px; opacity:0.9;"><i class="fa-solid fa-check"></i> Dàn 25 ✓ (Kép ${tienVal}/${hauVal})</span>`;
+            } else if (hitHau25) {
+                secondaryDanBadge = `<span class="status-pill-trung" style="font-size:0.74rem; padding:3px 8px; opacity:0.9;"><i class="fa-solid fa-check"></i> Dàn 25 ✓ (Hậu ${hauVal})</span>`;
+            } else if (hitTien25) {
+                secondaryDanBadge = `<span class="status-pill-trung" style="font-size:0.74rem; padding:3px 8px; opacity:0.9;"><i class="fa-solid fa-check"></i> Dàn 25 ✓ (Tiền ${tienVal})</span>`;
+            } else {
+                secondaryDanBadge = `<span class="status-pill-truot" style="font-size:0.74rem; padding:3px 8px; opacity:0.8;"><i class="fa-solid fa-xmark"></i> Dàn 25 ✗</span>`;
+            }
+        }
+
         statusHtml = `
-            <span class="${isTxHup ? 'status-pill-hup' : 'status-pill-gay'}" style="font-size:0.72rem; padding:2px 8px;">${isTxHup ? 'TX ✓' : 'TX ✗'}</span>
-            <span class="${isClHup ? 'status-pill-hup' : 'status-pill-gay'}" style="font-size:0.72rem; padding:2px 8px;">${isClHup ? 'CL ✓' : 'CL ✗'}</span>
-            <span class="${isDanHup ? 'status-pill-trung' : 'status-pill-truot'}" style="font-size:0.72rem; padding:2px 8px;">${isDanHup ? 'Dàn 25 ✓' : 'Dàn 25 ✗'}</span>
+            ${txBadge}
+            ${clBadge}
+            ${dan36Badge}
+            ${secondaryDanBadge}
         `;
     }
 
@@ -2513,6 +2619,8 @@ function computeFrameHistory(rounds) {
         refDigits: baseRound.digits,
         cham6: baseCham.masterDigits6 || baseCham.masterDigits,
         cham5: baseCham.masterDigits5 || (baseCham.masterDigits6 || baseCham.masterDigits).slice(0, 5),
+        tienDigits: baseCham.tienDigits,
+        hauDigits: baseCham.hauDigits,
         dan36: baseCham.phucHopMaster36 || generatePhucHop36(baseCham.masterDigits6),
         dan30: baseCham.phucHopMaster30 || generatePhucHop30(baseCham.masterDigits6),
         dan25: baseCham.phucHopMaster25 || generatePhucHop25(baseCham.masterDigits5),
@@ -2564,6 +2672,8 @@ function computeFrameHistory(rounds) {
             hau,
             cham6: currentFrame.cham6,
             cham5: currentFrame.cham5,
+            tienDigits: currentFrame.tienDigits,
+            hauDigits: currentFrame.hauDigits,
             dan36: currentFrame.dan36,
             dan25: currentFrame.dan25,
             danTien25: currentFrame.danTien25,
@@ -2596,6 +2706,8 @@ function computeFrameHistory(rounds) {
                 refDigits: r.digits,
                 cham6: baseCham.masterDigits6 || baseCham.masterDigits,
                 cham5: baseCham.masterDigits5 || (baseCham.masterDigits6 || baseCham.masterDigits).slice(0, 5),
+                tienDigits: baseCham.tienDigits,
+                hauDigits: baseCham.hauDigits,
                 dan36: baseCham.phucHopMaster36 || generatePhucHop36(baseCham.masterDigits6),
                 dan30: baseCham.phucHopMaster30 || generatePhucHop30(baseCham.masterDigits6),
                 dan25: baseCham.phucHopMaster25 || generatePhucHop25(baseCham.masterDigits5),
@@ -2633,6 +2745,8 @@ function computeFrameHistory(rounds) {
                     refDigits: r.digits,
                     cham6: baseCham.masterDigits6 || baseCham.masterDigits,
                     cham5: baseCham.masterDigits5 || (baseCham.masterDigits6 || baseCham.masterDigits).slice(0, 5),
+                    tienDigits: baseCham.tienDigits,
+                    hauDigits: baseCham.hauDigits,
                     dan36: baseCham.phucHopMaster36 || generatePhucHop36(baseCham.masterDigits6),
                     dan30: baseCham.phucHopMaster30 || generatePhucHop30(baseCham.masterDigits6),
                     dan25: baseCham.phucHopMaster25 || generatePhucHop25(baseCham.masterDigits5),
@@ -2947,6 +3061,8 @@ function updateFrameUI() {
     const fStatStep2Ratio = document.getElementById('fStatStep2Ratio');
     const fStatStep3 = document.getElementById('fStatStep3');
     const fStatStep3Ratio = document.getElementById('fStatStep3Ratio');
+    const fStatLostRate = document.getElementById('fStatLostRate');
+    const fStatLostRatio = document.getElementById('fStatLostRatio');
 
     if (totalFramesBadge) totalFramesBadge.innerText = `${stats.totalDone} Khung Đã Xong`;
     if (fStatWinRate) fStatWinRate.innerText = `${stats.winRate}%`;
@@ -2957,6 +3073,8 @@ function updateFrameUI() {
     if (fStatStep2Ratio) fStatStep2Ratio.innerText = `${stats.wonStep2} Khung`;
     if (fStatStep3) fStatStep3.innerText = `${stats.rateStep3}%`;
     if (fStatStep3Ratio) fStatStep3Ratio.innerText = `${stats.wonStep3} Khung`;
+    if (fStatLostRate) fStatLostRate.innerText = `${stats.rateLost}%`;
+    if (fStatLostRatio) fStatLostRatio.innerText = `${stats.lostFrames} Khung`;
 
     // 2.2 UPDATE TIỀN NHỊ VS HẬU NHỊ STATS & BIAS
     const fStatTienKhung = document.getElementById('fStatTienKhung');
@@ -3261,193 +3379,98 @@ function update10RoundStats() {
         });
     }
 
-    // --- 3. TIỀN NHỊ METRICS & BADGES (25 SỐ ĐẦU) ---
-    const tienNhiHupElem = document.getElementById('tienNhiHupCount');
-    const tienNhiGayElem = document.getElementById('tienNhiGayCount');
-    const tienNhiRateElem = document.getElementById('tienNhiWinRate');
-    const tienNhiBadgesGrid = document.getElementById('last10BadgesTienNhi');
+    // --- 3. DÀN 36 SỐ BẤT BẠI METRICS & BADGES (10 KỲ) ---
+    const dan36HupElem = document.getElementById('dan36HupCount');
+    const dan36GayElem = document.getElementById('dan36GayCount');
+    const dan36RateElem = document.getElementById('dan36WinRate');
+    const dan36BothElem = document.getElementById('dan36BothCount');
+    const dan36BadgesGrid = document.getElementById('last10BadgesDan36');
+    const dan36StreakElem = document.getElementById('dan36StreakStatus');
 
-    let tienNhiHup = 0;
-    let tienNhiGay = 0;
+    let dan36Hup = 0;
+    let dan36Gay = 0;
+    let dan36Both = 0;
     last10.forEach(r => {
-        const isHit = (r.isTienNhiHit !== undefined) ? r.isTienNhiHit : false;
-        if (isHit) tienNhiHup++;
-        else tienNhiGay++;
+        const tienVal = `${r.digits[0]}${r.digits[1]}`;
+        const hauVal = `${r.digits[3]}${r.digits[4]}`;
+        const isHit = (r.isDan36Hit !== undefined) ? r.isDan36Hit : ((r.phucHop36 || []).includes(tienVal) || (r.phucHop36 || []).includes(hauVal));
+        if (isHit) {
+            dan36Hup++;
+            const hitTien = (r.phucHop36 || []).includes(tienVal) || r.isTien36Hit;
+            const hitHau = (r.phucHop36 || []).includes(hauVal) || r.isHau36Hit;
+            if (hitTien && hitHau) dan36Both++;
+        } else {
+            dan36Gay++;
+        }
     });
 
-    if (tienNhiHupElem) tienNhiHupElem.innerText = tienNhiHup;
-    if (tienNhiGayElem) tienNhiGayElem.innerText = tienNhiGay;
-    const tienRate = last10.length > 0 ? Math.round((tienNhiHup / last10.length) * 100) : 0;
-    if (tienNhiRateElem) tienNhiRateElem.innerText = `${tienRate}%`;
+    if (dan36HupElem) dan36HupElem.innerText = dan36Hup;
+    if (dan36GayElem) dan36GayElem.innerText = dan36Gay;
+    const dan36Rate = last10.length > 0 ? Math.round((dan36Hup / last10.length) * 100) : 0;
+    if (dan36RateElem) dan36RateElem.innerText = `${dan36Rate}%`;
+    if (dan36BothElem) dan36BothElem.innerText = `${dan36Both} Kỳ`;
 
-    if (tienNhiBadgesGrid) {
-        tienNhiBadgesGrid.innerHTML = '';
+    // Mini 10-Kỳ Dàn 36 Tracker in Prediction Box
+    const dan36MiniHupElem = document.getElementById('dan36MiniHupRatio');
+    const dan36MiniRateElem = document.getElementById('dan36MiniWinRate');
+    const dan36MiniDotsGrid = document.getElementById('dan36MiniDots');
+    if (dan36MiniHupElem) dan36MiniHupElem.innerText = `${dan36Hup}/${last10.length || 0} Húp`;
+    if (dan36MiniRateElem) dan36MiniRateElem.innerText = `${dan36Rate}%`;
+    if (dan36MiniDotsGrid) {
+        dan36MiniDotsGrid.innerHTML = '';
         for (let i = 0; i < emptyCount; i++) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'empty-badge-slot';
-            emptyDiv.innerText = '-';
-            tienNhiBadgesGrid.appendChild(emptyDiv);
+            const dot = document.createElement('div');
+            dot.className = 'mini-dot dot-empty';
+            dot.innerText = '-';
+            dan36MiniDotsGrid.appendChild(dot);
         }
         last10.forEach(r => {
-            const isWin = (r.isTienNhiHit !== undefined) ? r.isTienNhiHit : false;
-            const badge = document.createElement('div');
-            badge.className = `tracker-badge ${isWin ? 'badge-hup' : 'badge-gay'}`;
-            const val = r.tienNhiVal || `${r.digits[0]}${r.digits[1]}`;
-            badge.innerHTML = `
-                <span class="badge-status-title">${isWin ? 'HÚP' : 'GÃY'}</span>
-                <span class="badge-res-val">[${val}] ${isWin ? '✓' : '✗'}</span>
-                <span class="badge-round-num">${r.period}</span>
-            `;
-            badge.title = `Kỳ ${r.period} | Tiền Nhị [${val}] ➔ ${isWin ? 'HÚP ✓ (Trúng trong 25 số VIP)' : 'GÃY ✗'}`;
-            tienNhiBadgesGrid.appendChild(badge);
+            const tienVal = `${r.digits[0]}${r.digits[1]}`;
+            const hauVal = `${r.digits[3]}${r.digits[4]}`;
+            const isWin = (r.isDan36Hit !== undefined) ? r.isDan36Hit : ((r.phucHop36 || []).includes(tienVal) || (r.phucHop36 || []).includes(hauVal));
+            const dot = document.createElement('div');
+            dot.className = `mini-dot ${isWin ? 'dot-hup' : 'dot-gay'}`;
+            dot.innerText = isWin ? 'H' : 'G';
+            dot.title = `Kỳ ${r.period}: Dàn 36 Số ➔ ${isWin ? 'HÚP ✓' : 'GÃY ✗'} (Tiền: ${tienVal} - Hậu: ${hauVal})`;
+            dan36MiniDotsGrid.appendChild(dot);
         });
     }
 
-    // --- 4. HẬU NHỊ METRICS & BADGES (25 SỐ ĐUÔI) ---
-    const hauNhiHupElem = document.getElementById('hauNhiHupCount');
-    const hauNhiGayElem = document.getElementById('hauNhiGayCount');
-    const hauNhiRateElem = document.getElementById('hauNhiWinRate');
-    const hauNhiBadgesGrid = document.getElementById('last10BadgesHauNhi');
-
-    let hauNhiHup = 0;
-    let hauNhiGay = 0;
-    last10.forEach(r => {
-        const isHit = (r.isHauNhiHit !== undefined) ? r.isHauNhiHit : false;
-        if (isHit) hauNhiHup++;
-        else hauNhiGay++;
-    });
-
-    if (hauNhiHupElem) hauNhiHupElem.innerText = hauNhiHup;
-    if (hauNhiGayElem) hauNhiGayElem.innerText = hauNhiGay;
-    const hauRate = last10.length > 0 ? Math.round((hauNhiHup / last10.length) * 100) : 0;
-    if (hauNhiRateElem) hauNhiRateElem.innerText = `${hauRate}%`;
-
-    if (hauNhiBadgesGrid) {
-        hauNhiBadgesGrid.innerHTML = '';
+    if (dan36BadgesGrid) {
+        dan36BadgesGrid.innerHTML = '';
         for (let i = 0; i < emptyCount; i++) {
             const emptyDiv = document.createElement('div');
             emptyDiv.className = 'empty-badge-slot';
             emptyDiv.innerText = '-';
-            hauNhiBadgesGrid.appendChild(emptyDiv);
+            dan36BadgesGrid.appendChild(emptyDiv);
         }
         last10.forEach(r => {
-            const isWin = (r.isHauNhiHit !== undefined) ? r.isHauNhiHit : false;
+            const tienVal = `${r.digits[0]}${r.digits[1]}`;
+            const hauVal = `${r.digits[3]}${r.digits[4]}`;
+            const isWin = (r.isDan36Hit !== undefined) ? r.isDan36Hit : ((r.phucHop36 || []).includes(tienVal) || (r.phucHop36 || []).includes(hauVal));
             const badge = document.createElement('div');
             badge.className = `tracker-badge ${isWin ? 'badge-hup' : 'badge-gay'}`;
-            const val = r.hauNhiVal || `${r.digits[3]}${r.digits[4]}`;
+            
+            const hitTien = (r.phucHop36 || []).includes(tienVal) || r.isTien36Hit;
+            const hitHau = (r.phucHop36 || []).includes(hauVal) || r.isHau36Hit;
+            let subLabel = '';
+            if (isWin) {
+                if (hitTien && hitHau) subLabel = `2 Đầu [${tienVal}/${hauVal}]`;
+                else if (hitTien) subLabel = `Tiền [${tienVal}] ✓`;
+                else subLabel = `Hậu [${hauVal}] ✓`;
+            } else {
+                subLabel = `[${tienVal}/${hauVal}] ✗`;
+            }
+
             badge.innerHTML = `
                 <span class="badge-status-title">${isWin ? 'HÚP' : 'GÃY'}</span>
-                <span class="badge-res-val">[${val}] ${isWin ? '✓' : '✗'}</span>
+                <span class="badge-res-val">${subLabel}</span>
                 <span class="badge-round-num">${r.period}</span>
             `;
-            badge.title = `Kỳ ${r.period} | Hậu Nhị [${val}] ➔ ${isWin ? 'HÚP ✓ (Trúng trong 25 số VIP)' : 'GÃY ✗'}`;
-            hauNhiBadgesGrid.appendChild(badge);
+            badge.title = `Kỳ ${r.period} | Dàn 36 Số VIP ➔ ${isWin ? 'HÚP ✓ (Trúng trong 36 số Bất Bại)' : 'GÃY ✗'} (Tiền: ${tienVal} - Hậu: ${hauVal})`;
+            dan36BadgesGrid.appendChild(badge);
         });
     }
-
-    // --- 5. BẮT 5 CHẠM THEO THỨ TỰ TỶ LỆ (% CAO ➔ THẤP) ---
-    const chamHupElem = document.getElementById('chamHupCount');
-    const chamRateElem = document.getElementById('chamWinRate');
-    const chamStreakElem = document.getElementById('chamStreakStatus');
-
-    const cham1HupElem = document.getElementById('cham1HupCount');
-    const cham1RateElem = document.getElementById('cham1Rate');
-    const cham1BadgesGrid = document.getElementById('last10BadgesCham1');
-
-    const cham2HupElem = document.getElementById('cham2HupCount');
-    const cham2RateElem = document.getElementById('cham2Rate');
-    const cham2BadgesGrid = document.getElementById('last10BadgesCham2');
-
-    const cham3HupElem = document.getElementById('cham3HupCount');
-    const cham3RateElem = document.getElementById('cham3Rate');
-    const cham3BadgesGrid = document.getElementById('last10BadgesCham3');
-
-    const cham4HupElem = document.getElementById('cham4HupCount');
-    const cham4RateElem = document.getElementById('cham4Rate');
-    const cham4BadgesGrid = document.getElementById('last10BadgesCham4');
-
-    const cham5HupElem = document.getElementById('cham5HupCount');
-    const cham5RateElem = document.getElementById('cham5Rate');
-    const cham5BadgesGrid = document.getElementById('last10BadgesCham5');
-
-    let chamHup = 0;
-    let cham1Hup = 0;
-    let cham2Hup = 0;
-    let cham3Hup = 0;
-    let cham4Hup = 0;
-    let cham5Hup = 0;
-
-    const tierData = {
-        tier1: [],
-        tier2: [],
-        tier3: [],
-        tier4: [],
-        tier5: []
-    };
-
-    last10.forEach(r => {
-        const defaultCham = [9, 4, 2, 7, 0];
-        const defaultProb = [87, 76, 68, 58, 45];
-        const chamArr = (r.predCham && r.predCham.length >= 5) ? r.predCham : (r.predCham || defaultCham);
-        
-        for (let t = 0; t < 5; t++) {
-            const digit = (chamArr[t] !== undefined) ? chamArr[t] : defaultCham[t];
-            const prob = (r.predChamList && r.predChamList[t]) ? r.predChamList[t].prob : defaultProb[t];
-            const hit = r.digits.includes(digit);
-            if (t === 0 && hit) cham1Hup++;
-            if (t === 1 && hit) cham2Hup++;
-            if (t === 2 && hit) cham3Hup++;
-            if (t === 3 && hit) cham4Hup++;
-            if (t === 4 && hit) cham5Hup++;
-            tierData[`tier${t+1}`].push({ digit, prob, hit, period: r.period });
-        }
-
-        const isAnyChamHit = chamArr.some(c => r.digits.includes(c));
-        if (isAnyChamHit) chamHup++;
-    });
-
-    if (chamHupElem) chamHupElem.innerText = `${chamHup}/${last10.length}`;
-    const chamRate = last10.length > 0 ? Math.round((chamHup / last10.length) * 100) : 0;
-    if (chamRateElem) chamRateElem.innerText = `${chamRate}%`;
-
-    const tierCounts = [cham1Hup, cham2Hup, cham3Hup, cham4Hup, cham5Hup];
-    const hupElems = [cham1HupElem, cham2HupElem, cham3HupElem, cham4HupElem, cham5HupElem];
-    const rateElems = [cham1RateElem, cham2RateElem, cham3RateElem, cham4RateElem, cham5RateElem];
-
-    for (let t = 0; t < 5; t++) {
-        if (hupElems[t]) hupElems[t].innerText = tierCounts[t];
-        const rate = last10.length > 0 ? Math.round((tierCounts[t] / last10.length) * 100) : 0;
-        if (rateElems[t]) rateElems[t].innerText = `${rate}%`;
-    }
-
-    function renderTierBadges(gridElem, dataList, tierLabel) {
-        if (!gridElem) return;
-        gridElem.innerHTML = '';
-        for (let i = 0; i < emptyCount; i++) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'empty-badge-slot';
-            emptyDiv.innerText = '-';
-            gridElem.appendChild(emptyDiv);
-        }
-        dataList.forEach(item => {
-            const isWin = item.hit;
-            const badge = document.createElement('div');
-            badge.className = `tracker-badge ${isWin ? 'badge-hup' : 'badge-gay'}`;
-            badge.innerHTML = `
-                <span>${isWin ? 'TRÚNG' : 'TRƯỢT'}</span>
-                <span class="badge-res-val">Chạm ${item.digit}</span>
-                <span class="badge-round-num">${item.period}</span>
-            `;
-            badge.title = `Kỳ ${item.period} | ${tierLabel}: Chạm ${item.digit} (${item.prob}%) ➔ ${isWin ? 'TRÚNG (Có số này)' : 'TRƯỢT (Không có số này)'}`;
-            gridElem.appendChild(badge);
-        });
-    }
-
-    renderTierBadges(cham1BadgesGrid, tierData.tier1, 'TOP 1 (% Cao Nhất)');
-    renderTierBadges(cham2BadgesGrid, tierData.tier2, 'TOP 2 (% Thứ 2)');
-    renderTierBadges(cham3BadgesGrid, tierData.tier3, 'TOP 3 (% Thứ 3)');
-    renderTierBadges(cham4BadgesGrid, tierData.tier4, 'TOP 4 (% Thứ 4)');
-    renderTierBadges(cham5BadgesGrid, tierData.tier5, 'TOP 5 (% Thứ 5)');
 
     // Streaks (evaluated on playable rounds)
     if (playableRounds.length > 0) {
@@ -3471,19 +3494,21 @@ function update10RoundStats() {
             clStreakElem.innerHTML = lastClHup ? `<span class="text-green">Đang Húp ${clStreak} tay</span>` : `<span class="text-red">Gãy ${clStreak} tay</span>`;
         }
 
-        const lastChamHit = playableRounds[playableRounds.length - 1].isChamHit;
-        let chamStreak = 0;
+        const lastDan36Hup = (playableRounds[playableRounds.length - 1].isDan36Hit !== undefined) ? playableRounds[playableRounds.length - 1].isDan36Hit : ((playableRounds[playableRounds.length - 1].phucHop36 || []).includes(`${playableRounds[playableRounds.length - 1].digits[0]}${playableRounds[playableRounds.length - 1].digits[1]}`) || (playableRounds[playableRounds.length - 1].phucHop36 || []).includes(`${playableRounds[playableRounds.length - 1].digits[3]}${playableRounds[playableRounds.length - 1].digits[4]}`));
+        let dan36Streak = 0;
         for (let j = playableRounds.length - 1; j >= 0; j--) {
-            if (playableRounds[j].isChamHit === lastChamHit) chamStreak++;
+            const pR = playableRounds[j];
+            const hit = (pR.isDan36Hit !== undefined) ? pR.isDan36Hit : ((pR.phucHop36 || []).includes(`${pR.digits[0]}${pR.digits[1]}`) || (pR.phucHop36 || []).includes(`${pR.digits[3]}${pR.digits[4]}`));
+            if (hit === lastDan36Hup) dan36Streak++;
             else break;
         }
-        if (chamStreakElem) {
-            chamStreakElem.innerHTML = lastChamHit ? `<span class="text-green">Đang Trúng ${chamStreak} tay</span>` : `<span class="text-red">Trượt ${chamStreak} tay</span>`;
+        if (dan36StreakElem) {
+            dan36StreakElem.innerHTML = lastDan36Hup ? `<span class="text-green">Đang Húp ${dan36Streak} tay</span>` : `<span class="text-red">Gãy ${dan36Streak} tay</span>`;
         }
     } else {
         if (txStreakElem) txStreakElem.innerHTML = '<span class="text-dim">Chờ Kỳ 6</span>';
         if (clStreakElem) clStreakElem.innerHTML = '<span class="text-dim">Chờ Kỳ 6</span>';
-        if (chamStreakElem) chamStreakElem.innerHTML = '<span class="text-dim">Chờ Kỳ 6</span>';
+        if (dan36StreakElem) dan36StreakElem.innerHTML = '<span class="text-dim">Chờ Kỳ 6</span>';
     }
 }
 
@@ -3665,45 +3690,60 @@ function updateHistoryTable() {
             txStatusBadge = `<span class="status-pill-warmup" title="5 kỳ kết quả đầu tiên làm mốc dữ liệu gốc"><i class="fa-solid fa-seedling"></i> Mốc Gốc</span>`;
             clStatusBadge = `<span class="status-pill-warmup" title="5 kỳ kết quả đầu tiên làm mốc dữ liệu gốc"><i class="fa-solid fa-seedling"></i> Mốc Gốc</span>`;
         } else {
-            txStatusBadge = r.statusTx === 'Húp'
-                ? `<span class="status-pill-hup" title="Đoán đúng ${r.predTx}"><i class="fa-solid fa-check"></i> HÚP (${r.predTx})</span>`
-                : `<span class="status-pill-gay" title="Đoán ${r.predTx} nhưng ra ${r.actualTx}"><i class="fa-solid fa-xmark"></i> GÃY (Đoán ${r.predTx} ➔ Ra ${r.actualTx})</span>`;
+            const isTxWin = r.statusTx === 'Húp';
+            const txShort = r.actualTx === 'Tài' ? 'T' : 'X';
+            txStatusBadge = isTxWin
+                ? `<span class="status-pill-hup" title="Đoán đúng ${r.predTx}"><i class="fa-solid fa-circle-check"></i> Húp ${r.actualTx} (${txShort} ✓)</span>`
+                : `<span class="status-pill-gay" title="Đoán ${r.predTx} nhưng ra ${r.actualTx}"><i class="fa-solid fa-circle-xmark"></i> Gãy TX ✗ (Đoán ${r.predTx})</span>`;
 
-            clStatusBadge = r.statusCl === 'Húp'
-                ? `<span class="status-pill-hup" title="Đoán đúng ${r.predCl}"><i class="fa-solid fa-check"></i> HÚP (${r.predCl})</span>`
-                : `<span class="status-pill-gay" title="Đoán ${r.predCl} nhưng ra ${r.actualCl}"><i class="fa-solid fa-xmark"></i> GÃY (Đoán ${r.predCl} ➔ Ra ${r.actualCl})</span>`;
+            const isClWin = r.statusCl === 'Húp';
+            const clShort = r.actualCl === 'Chẵn' ? 'C' : 'L';
+            clStatusBadge = isClWin
+                ? `<span class="status-pill-hup" title="Đoán đúng ${r.predCl}"><i class="fa-solid fa-circle-check"></i> Húp ${r.actualCl} (${clShort} ✓)</span>`
+                : `<span class="status-pill-gay" title="Đoán ${r.predCl} nhưng ra ${r.actualCl}"><i class="fa-solid fa-circle-xmark"></i> Gãy CL ✗ (Đoán ${r.predCl})</span>`;
         }
 
-        // Đối soát 5 Chạm
+        // Đối soát 5 Chạm & Dàn 36 Số VIP
         let chamStatusBadge = '';
         if (isWarmup) {
             chamStatusBadge = `<div class="table-cham-results"><span class="status-pill-warmup"><i class="fa-solid fa-seedling"></i> Mốc Gốc</span></div>`;
         } else {
             const hitArr = chamArr.filter(c => r.digits.includes(c));
-            const isDanHit = hitArr.length > 0;
+            const isDan36Hit = (r.isDan36Hit !== undefined) ? r.isDan36Hit : ((r.phucHop36 || []).includes(`${r.digits[0]}${r.digits[1]}`) || (r.phucHop36 || []).includes(`${r.digits[3]}${r.digits[4]}`));
+            const tienVal = `${r.digits[0]}${r.digits[1]}`;
+            const hauVal = `${r.digits[3]}${r.digits[4]}`;
+            const hitTien36 = (r.phucHop36 || []).includes(tienVal) || r.isTien36Hit;
+            const hitHau36 = (r.phucHop36 || []).includes(hauVal) || r.isHau36Hit;
+            
+            let detail36 = '';
+            if (hitTien36 && hitHau36) detail36 = `Kép (Tiền ${tienVal} + Hậu ${hauVal})`;
+            else if (hitTien36) detail36 = `Húp Tiền (${tienVal})`;
+            else if (hitHau36) detail36 = `Húp Hậu (${hauVal})`;
+
             let miniHitsHtml = '';
-            for (let t = 0; t < 5; t++) {
-                const digit = (chamArr[t] !== undefined) ? chamArr[t] : defaultCham[t];
+            for (let t = 0; t < Math.min(6, chamArr.length); t++) {
+                const digit = chamArr[t];
                 const hit = r.digits.includes(digit);
                 miniHitsHtml += `<span class="status-mini-cham ${hit ? 'cham-hit' : 'cham-miss'}" title="Top ${t+1} Chạm ${digit}">T${t+1}:${hit ? '✓' : '✗'}</span>`;
             }
 
             chamStatusBadge = `
                 <div class="table-cham-results">
-                    ${isDanHit ? `<span class="status-pill-trung"><i class="fa-solid fa-check"></i> TRÚNG [${hitArr.join(',')}]</span>` : `<span class="status-pill-truot"><i class="fa-solid fa-xmark"></i> TRƯỢT</span>`}
-                    <div style="display:flex; gap:2px; margin-top:2px; flex-wrap:wrap; justify-content:center;">
+                    <span class="${isDan36Hit ? 'status-pill-trung' : 'status-pill-truot'}" style="font-weight:800; font-size:0.75rem;">
+                        <i class="fa-solid ${isDan36Hit ? 'fa-check' : 'fa-xmark'}"></i> Dàn 36: ${isDan36Hit ? `HÚP ✓ (${detail36})` : 'GÃY ✗'}
+                    </span>
+                    <div style="display:flex; gap:2px; margin-top:3px; flex-wrap:wrap; justify-content:center;">
                         ${miniHitsHtml}
                     </div>
                 </div>
             `;
         }
 
-        // Đối soát Tiền Nhị & Hậu Nhị (25 số phức hợp)
+        // Đối soát Tiền Nhị & Hậu Nhị
         const tienVal = `${r.digits[0]}${r.digits[1]}`;
-        const isTienHit = (r.isTienNhiHit !== undefined) ? r.isTienNhiHit : (chamArr.includes(r.digits[0]) && chamArr.includes(r.digits[1]));
-        
         const hauVal = `${r.digits[3]}${r.digits[4]}`;
-        const isHauHit = (r.isHauNhiHit !== undefined) ? r.isHauNhiHit : (chamArr.includes(r.digits[3]) && chamArr.includes(r.digits[4]));
+        const isTienHit = (r.isTien36Hit !== undefined) ? r.isTien36Hit : ((r.phucHop36 || []).includes(tienVal));
+        const isHauHit = (r.isHau36Hit !== undefined) ? r.isHau36Hit : ((r.phucHop36 || []).includes(hauVal));
 
         let nhiStatusBadge = '';
         if (isWarmup) {
